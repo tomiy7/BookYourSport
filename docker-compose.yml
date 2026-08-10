@@ -1,0 +1,8 @@
+services:
+  
+  reservationdb:
+    image: postgres:16
+    
+volumes:
+  reservation_data:
+    
