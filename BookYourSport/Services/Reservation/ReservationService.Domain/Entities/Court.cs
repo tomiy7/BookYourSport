@@ -28,7 +28,7 @@ public class Court : Entity
         IsActive = true;
     }
 
-    public static Court Create(Guid clubId, string name, SurfaceType surfaceType, bool isIndoor, Price pricePerHour)
+    internal static Court Create(Guid clubId, string name, SurfaceType surfaceType, bool isIndoor, Price pricePerHour)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ReservationDomainException("Name of the court is mandatory.");
