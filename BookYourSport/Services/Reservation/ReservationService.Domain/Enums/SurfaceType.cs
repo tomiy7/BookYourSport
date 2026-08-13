@@ -1,4 +1,4 @@
-﻿namespace ReservationService.Domain;
+﻿namespace ReservationService.Domain.Enums;
 
 public enum SurfaceType
 {

@@ -12,7 +12,7 @@ public class Address : ValueObject
     public string Country { get; private set; }
     public string StreetNumber { get; private set; }
     
-    private Address() { City = string.Empty; Street = string.Empty; Country = string.Empty; }
+    private Address() { City = string.Empty; Street = string.Empty; Country = string.Empty; StreetNumber = string.Empty; }
 
     private Address(string city, string? state, string? zipCode, string street, string country, string streetNumber)
     {
@@ -39,7 +39,7 @@ public class Address : ValueObject
         return new Address(city.Trim(), state?.Trim(), zipCode?.Trim(), street.Trim(), country.Trim(), streetNumber.Trim());
     } 
     
-    protected override IEnumerable<object> GetEqualityComponents()
+    protected override IEnumerable<object?> GetEqualityComponents()
     {
         yield return City;
         yield return State;

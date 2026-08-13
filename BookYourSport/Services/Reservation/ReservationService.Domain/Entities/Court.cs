@@ -1,4 +1,5 @@
 ﻿using ReservationService.Domain.Common;
+using ReservationService.Domain.Enums;
 using ReservationService.Domain.Exceptions;
 using ReservationService.Domain.ValueObjects;
 
