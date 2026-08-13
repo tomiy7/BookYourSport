@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace AuthService.API.DTOs;
 
-public class AuthResponseDto
+public class RefreshRequestDto
 {
-    public string AccessToken { get; set; } = string.Empty;
+    [Required]
     public string RefreshToken { get; set; } = string.Empty;
 }

@@ -11,16 +11,22 @@ namespace AuthService.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly ILogger<AuthController> _logger;
+    private readonly IConfiguration _config;
     private readonly IUserRepository _userRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ITokenService _tokenService;
 
     public AuthController(
         ILogger<AuthController> logger,
+        IConfiguration config,
         IUserRepository userRepository,
+        IRefreshTokenRepository refreshTokenRepository,
         ITokenService tokenService)
     {
         _logger = logger;
+        _config = config;
         _userRepository = userRepository;
+        _refreshTokenRepository = refreshTokenRepository;
         _tokenService = tokenService;
     }
 
@@ -48,10 +54,13 @@ public class AuthController : ControllerBase
             FirstName = registerRequestDto.FirstName,
             LastName = registerRequestDto.LastName,
             Email = registerRequestDto.Email,
+
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(
                 registerRequestDto.Password),
+
             City = registerRequestDto.City,
             DateOfBirth = registerRequestDto.DateOfBirth,
+
             Role = Roles.Player
         };
 
@@ -63,14 +72,11 @@ public class AuthController : ControllerBase
             user.Email,
             user.Id);
 
-        var accessToken = _tokenService.GenerateAccessToken(user);
+        var tokens = await IssueTokens(user);
 
         return StatusCode(
             StatusCodes.Status201Created,
-            new AuthResponseDto
-            {
-                AccessToken = accessToken
-            });
+            tokens);
     }
 
     [HttpPost("login")]
@@ -104,11 +110,81 @@ public class AuthController : ControllerBase
             "User {Email} successfully logged in",
             user.Email);
 
+        var tokens = await IssueTokens(user);
+
+        return Ok(tokens);
+    }
+
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ErrorResponseDto),
+        StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshAsync(
+        RefreshRequestDto refreshRequestDto)
+    {
+        var storedToken =
+            await _refreshTokenRepository.GetByTokenAsync(
+                refreshRequestDto.RefreshToken);
+
+        if (storedToken == null || !storedToken.IsActive)
+        {
+            _logger.LogWarning(
+                "Invalid or expired refresh token attempted");
+
+            return Unauthorized(new ErrorResponseDto
+            {
+                Error = AuthErrorCodes.InvalidRefreshToken,
+                Message = "Refresh token is invalid or expired."
+            });
+        }
+
+        // Revoke the old refresh token so it cannot be reused.
+        storedToken.RevokedAt = DateTime.UtcNow;
+
+        _logger.LogInformation(
+            "Refresh token used for user {UserId}",
+            storedToken.UserId);
+
+        // Generate a new access token and refresh token.
+        var tokens = await IssueTokens(storedToken.User);
+
+        // Save the revocation of the old refresh token.
+        await _refreshTokenRepository.SaveChangesAsync();
+
+        return Ok(tokens);
+    }
+
+    private async Task<AuthResponseDto> IssueTokens(User user)
+    {
+        // Generate a new access token.
         var accessToken = _tokenService.GenerateAccessToken(user);
 
-        return Ok(new AuthResponseDto
+        // Generate a new refresh token.
+        var refreshTokenValue = _tokenService.GenerateRefreshToken();
+
+        // Get the refresh token lifetime from configuration.
+        var refreshTokenDays = _config.GetValue<int>(
+            "Jwt:RefreshTokenDays",
+            60);
+
+        // Create a refresh token entity for the database.
+        var refreshToken = new RefreshToken
         {
-            AccessToken = accessToken
-        });
+            UserId = user.Id,
+            Token = refreshTokenValue,
+            ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenDays)
+        };
+
+        // Save the refresh token to the database.
+        await _refreshTokenRepository.AddAsync(refreshToken);
+        await _refreshTokenRepository.SaveChangesAsync();
+
+        // Return both tokens to the client.
+        return new AuthResponseDto
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshTokenValue
+        };
     }
 }
