@@ -48,4 +48,51 @@ public class TennisClub : AggregateRoot
     
     public void Activate() => IsActive = true;
     public void Deactivate() => IsActive = false;
+    
+    public Court AddCourt(string name, Domain.Enums.SurfaceType surfaceType, bool isIndoor, Price pricePerHour)
+    {
+        if (!IsActive)
+            throw new ReservationDomainException("Can not add court to an inactive club.");
+
+        if (_courts.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            throw new ReservationDomainException($"Court with name '{name}' already exists in this club.");
+
+        var court = Court.Create(Id, name, surfaceType, isIndoor, pricePerHour);
+        _courts.Add(court);
+        return court;
+    }
+
+    public void RemoveCourt(Guid courtId)
+    {
+        var court = _courts.FirstOrDefault(c => c.Id == courtId);
+        if (court == null)
+            throw new ReservationDomainException($"Court with id '{courtId}' does not exist in this club.");
+
+        _courts.Remove(court);
+    }
+
+    public void SetWorkingHours(DayOfWeek day, TimeOnly openTime, TimeOnly closeTime, bool isClosed = false)
+    {
+        if (!isClosed && openTime >= closeTime)
+            throw new ReservationDomainException("Time of opening must be before the time of closing.");
+
+        var existing = _workingHours.FirstOrDefault(w => w.DayOfWeek == day);
+        if (existing != null)
+        {
+            existing.Update(openTime, closeTime, isClosed);
+        }
+        else
+        {
+            _workingHours.Add(Entities.WorkingHours.Create(Id, day, openTime, closeTime, isClosed));
+        }
+    }
+
+    public bool IsOpenAt(DateTime dateTime)
+    {
+        var hours = _workingHours.FirstOrDefault(w => w.DayOfWeek == dateTime.DayOfWeek);
+        if (hours == null || hours.IsClosed) return false;
+
+        var time = TimeOnly.FromDateTime(dateTime);
+        return time >= hours.OpenTime && time <= hours.CloseTime;
+    }
 }
