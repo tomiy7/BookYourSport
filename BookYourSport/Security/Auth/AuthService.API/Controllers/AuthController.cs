@@ -2,6 +2,7 @@ using AuthService.API.DTOs;
 using AuthService.API.Entities;
 using AuthService.API.Repositories;
 using AuthService.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AuthService.API.Controllers;
@@ -54,13 +55,10 @@ public class AuthController : ControllerBase
             FirstName = registerRequestDto.FirstName,
             LastName = registerRequestDto.LastName,
             Email = registerRequestDto.Email,
-
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(
                 registerRequestDto.Password),
-
             City = registerRequestDto.City,
             DateOfBirth = registerRequestDto.DateOfBirth,
-
             Role = Roles.Player
         };
 
@@ -153,6 +151,36 @@ public class AuthController : ControllerBase
         await _refreshTokenRepository.SaveChangesAsync();
 
         return Ok(tokens);
+    }
+
+    [HttpGet("test/player")]
+    [Authorize(Roles = Roles.Player)]
+    public IActionResult PlayerTest()
+    {
+        return Ok(new
+        {
+            message = "You have access to the player endpoint."
+        });
+    }
+
+    [HttpGet("test/club")]
+    [Authorize(Roles = Roles.Club)]
+    public IActionResult ClubTest()
+    {
+        return Ok(new
+        {
+            message = "You have access to the club endpoint."
+        });
+    }
+
+    [HttpGet("test/admin")]
+    [Authorize(Roles = Roles.Admin)]
+    public IActionResult AdminTest()
+    {
+        return Ok(new
+        {
+            message = "You have access to the admin endpoint."
+        });
     }
 
     private async Task<AuthResponseDto> IssueTokens(User user)
