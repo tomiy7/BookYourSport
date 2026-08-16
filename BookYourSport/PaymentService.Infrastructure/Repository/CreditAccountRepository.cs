@@ -1,29 +1,35 @@
-﻿using PaymentService.Application.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using PaymentService.Application.Interfaces;
 using PaymentService.Domain.Entities;
-using System.Linq;
+using PaymentService.Infrastructure.Persistence;
 
 namespace PaymentService.Infrastructure.Repositories;
 
 public class CreditAccountRepository : ICreditAccountRepository
 {
-    private readonly List<CreditAccount> _accounts = new();
-    public Task<CreditAccount?> GetByUserIdAsync(Guid userId)
-    {
-        var account = _accounts
-            .FirstOrDefault(x => x.UserId == userId);
+    private readonly PaymentDbContext _dbContext;
 
-        return Task.FromResult(account);
-    }
-    public Task SaveAsync(CreditAccount account)
+    public CreditAccountRepository(PaymentDbContext dbContext)
     {
-        var existingAccount = _accounts
-            .FirstOrDefault(x => x.Id == account.Id);
+        _dbContext = dbContext;
+    }
+
+    public async Task<CreditAccount?> GetByUserIdAsync(Guid userId)
+    {
+        return await _dbContext.CreditAccounts
+            .FirstOrDefaultAsync(x => x.UserId == userId);
+    }
+
+    public async Task SaveAsync(CreditAccount account)
+    {
+        var existingAccount = await _dbContext.CreditAccounts
+            .FirstOrDefaultAsync(x => x.Id == account.Id);
 
         if (existingAccount is null)
         {
-            _accounts.Add(account);
+            await _dbContext.CreditAccounts.AddAsync(account);
         }
 
-        return Task.CompletedTask;
+        await _dbContext.SaveChangesAsync();
     }
 }
