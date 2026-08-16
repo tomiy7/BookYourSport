@@ -9,4 +9,5 @@ public interface ICourtService
     Task<CourtDto?> GetCourtByIdAsync(Guid clubId, Guid courtId);
     Task<CourtDto?> CreateCourtAsync(Guid clubId, CreateCourtDto courtDto);
     Task<CourtDto?> UpdateCourtAsync(Guid clubId, Guid courtId, UpdateCourtDto courtDto);
+    Task<bool> DeleteCourtAsync(Guid clubId,  Guid courtId);
 }

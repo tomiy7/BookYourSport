@@ -8,4 +8,5 @@ public interface IClubService
     Task<ClubDto?> GetClubByIdAsync(Guid id);
     Task<ClubDto> CreateClubAsync(CreateClubDto clubDto);
     Task<ClubDto?> UpdateClubAsync(Guid id, UpdateClubDto clubDto);
+    Task<bool> DeleteClubAsync(Guid id);
 }
