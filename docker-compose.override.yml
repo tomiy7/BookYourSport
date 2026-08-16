@@ -1,0 +1,18 @@
+services:
+  
+  # DB for auth service
+  authdb:
+    container_name: authdb
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5433:5432"
+    restart: always
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+    networks:
+      - backend
+  
+  

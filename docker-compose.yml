@@ -1,0 +1,11 @@
+services:
+  
+  authdb:
+    image: postgres:16
+    
+volumes:
+  auth_data:
+    
+networks:
+  backend:
+    driver: bridge
