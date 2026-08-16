@@ -1,10 +1,12 @@
-using PaymentService.Application.Interfaces;
-using PaymentService.Infrastructure.Payment;
-using PaymentService.Application.Commands.TopUpCredit;
-using PaymentService.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
-using PaymentService.Infrastructure.Persistence;
 using PaymentService.Application.Commands.ChargeCredit;
+using PaymentService.Application.Commands.RefundCredit;
+using PaymentService.Application.Commands.TopUpCredit;
+using PaymentService.Application.Interfaces;
+using PaymentService.Domain.Services;
+using PaymentService.Infrastructure.Payment;
+using PaymentService.Infrastructure.Persistence;
+using PaymentService.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +20,8 @@ builder.Services.AddScoped<IPaymentProcessor, MockPaymentProcessor>();
 builder.Services.AddScoped<ICreditAccountRepository, CreditAccountRepository>();
 builder.Services.AddScoped<TopUpCreditHandler>();
 builder.Services.AddScoped<ChargeCreditHandler>();
+builder.Services.AddScoped<RefundCreditHandler>();
+builder.Services.AddScoped<RefundPolicy>();
 builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("PaymentDb")));
