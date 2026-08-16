@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService.Application.Commands.ChargeCredit;
+using PaymentService.Application.Commands.PaySubscription;
 using PaymentService.Application.Commands.RefundCredit;
 using PaymentService.Application.Commands.TopUpCredit;
 using PaymentService.Application.Interfaces;
 using PaymentService.Domain.Services;
+using PaymentService.Infrastructure.Auth;
 using PaymentService.Infrastructure.Payment;
 using PaymentService.Infrastructure.Persistence;
 using PaymentService.Infrastructure.Repositories;
@@ -25,6 +27,12 @@ builder.Services.AddScoped<RefundPolicy>();
 builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("PaymentDb")));
+builder.Services.AddHttpClient<IAuthServiceClient, AuthServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["AuthService:BaseUrl"]!);
+});
+builder.Services.AddScoped<PaySubscriptionHandler>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
