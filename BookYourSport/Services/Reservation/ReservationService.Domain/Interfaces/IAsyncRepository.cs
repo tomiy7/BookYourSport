@@ -4,7 +4,7 @@ namespace ReservationService.Domain.Interfaces;
 
 public interface IAsyncRepository<T> where T : AggregateRoot
 {
-    Task<T>GetByIdAsync(Guid id);
+    Task<T?>GetByIdAsync(Guid id);
     Task<List<T>> GetAllAsync();
     Task AddAsync(T entity);
     void Update(T entity);
