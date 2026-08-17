@@ -43,8 +43,8 @@ public class AvailabilityService : IAvailabilityService
         var existingReservations = await _reservationRepository.GetByCourtAndDateAsync(courtId, date);
 
         var slots = new List<AvailableSlotDto>();
-        var slotStart = date.ToDateTime(workingHours.OpenTime);
-        var dayClose = date.ToDateTime(workingHours.CloseTime);
+        var slotStart = DateTime.SpecifyKind(date.ToDateTime(workingHours.OpenTime), DateTimeKind.Utc);
+        var dayClose = DateTime.SpecifyKind(date.ToDateTime(workingHours.CloseTime), DateTimeKind.Utc);
 
         while (slotStart + SlotDuration <= dayClose)
         {

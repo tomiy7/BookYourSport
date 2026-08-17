@@ -14,7 +14,7 @@ public class ReservationRepository : RepositoryBase<Reservation>, IReservationRe
 
     public async Task<List<Reservation>> GetByCourtAndDateAsync(Guid courtId, DateOnly date)
     {
-        var dayStart = date.ToDateTime(TimeOnly.MinValue);
+        var dayStart = DateTime.SpecifyKind(date.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
         var dayEnd = dayStart.AddDays(1);
 
         return await _context.Reservations

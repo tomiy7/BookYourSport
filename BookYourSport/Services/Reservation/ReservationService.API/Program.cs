@@ -13,9 +13,11 @@ builder.Services.AddDbContext<ReservationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<IClubRepository, ClubRepository>();
+builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 
 builder.Services.AddScoped<IClubService, ClubService>();
 builder.Services.AddScoped<ICourtService, CourtService>();
+builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
