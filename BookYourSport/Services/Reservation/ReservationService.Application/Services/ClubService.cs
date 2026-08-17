@@ -10,9 +10,9 @@ namespace ReservationService.Application.Services;
 public class ClubService : IClubService
 {
     private readonly IClubRepository _clubRepository;
-    private readonly ILogger<CourtService> _logger;
+    private readonly ILogger<ClubService> _logger;
 
-    public ClubService(IClubRepository clubRepository, ILogger<CourtService> logger)
+    public ClubService(IClubRepository clubRepository, ILogger<ClubService> logger)
     {
         _clubRepository = clubRepository;
         _logger = logger;
@@ -57,10 +57,11 @@ public class ClubService : IClubService
         if (club == null)
         {
             _logger.LogWarning("Attempted to update non-existent club {ClubId}", id);
+            return null;
         }
         
         var address = Address.Create(clubDto.City, clubDto.State, clubDto.ZipCode, clubDto.Street, clubDto.Country, clubDto.StreetNumber);
-        club!.UpdateDetails(clubDto.Name, clubDto.Description, clubDto.PhoneNumber, clubDto.EmailAddress, address);
+        club.UpdateDetails(clubDto.Name, clubDto.Description, clubDto.PhoneNumber, clubDto.EmailAddress, address);
         
         _clubRepository.Update(club);
         await _clubRepository.SaveChangesAsync();
