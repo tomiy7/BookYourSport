@@ -1,4 +1,6 @@
-﻿using PaymentService.Application.Interfaces;
+﻿using PaymentService.Application.DTOs;
+using PaymentService.Application.Interfaces;
+using System.Net;
 using System.Net.Http.Json;
 
 namespace PaymentService.Infrastructure.Auth;
@@ -15,6 +17,7 @@ public class AuthServiceClient : IAuthServiceClient
     public async Task NotifySubscriptionPaidAsync(
     Guid userId,
     Guid paymentId,
+    Guid contractId,
     decimal amount,
     string currency)
     {
@@ -24,10 +27,24 @@ public class AuthServiceClient : IAuthServiceClient
             {
                 userId,
                 paymentId,
+                contractId,
                 amount,
                 currency
             });
 
         response.EnsureSuccessStatusCode();
+    }
+
+    public async Task<AuthUserDto?> GetUserAsync(Guid userId)
+    {
+        var response = await _httpClient.GetAsync(
+            $"/auth/users/{userId}");
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<AuthUserDto>();
     }
 }

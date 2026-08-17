@@ -43,4 +43,9 @@ public class User
     [MaxLength(20)]
     [Column("role")]
     public string Role { get; set; } = Roles.Player;
+
+    [Required]
+    [MaxLength(20)]
+    [Column("status")]
+    public string Status { get; set; } = UserStatus.Approved;
 }
