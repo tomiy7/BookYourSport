@@ -45,6 +45,16 @@ public class TennisClub : AggregateRoot
 
         return new TennisClub(name.Trim(), ownerId, description, phoneNumber, emailAddress, address);
     }
+
+    public void UpdateDetails(string name, string? description, string? phoneNumber, string? emailAddress,
+        Address address)
+    {
+        Name = name.Trim();
+        Description = description;
+        PhoneNumber = phoneNumber;
+        EmailAddress = emailAddress;
+        Address = address;
+    }
     
     public void Activate() => IsActive = true;
     public void Deactivate() => IsActive = false;
