@@ -2,6 +2,7 @@
 using PaymentService.Application.Commands.GenerateContract;
 using PaymentService.Application.Commands.SignContract;
 using PaymentService.Application.Interfaces;
+
 namespace PaymentService.API.Controllers;
 
 [ApiController]
@@ -22,6 +23,7 @@ public class ContractController : ControllerBase
         _signContractHandler = signContractHandler;
     }
 
+    // Generates a new contract for the specified user.
     [HttpPost("generate")]
     public async Task<IActionResult> GenerateContract(
         GenerateContractCommand command)
@@ -38,6 +40,7 @@ public class ContractController : ControllerBase
         });
     }
 
+    // Retrieves contract information by contract ID.
     [HttpGet("{contractId}")]
     public async Task<IActionResult> GetContract(
         Guid contractId)
@@ -59,9 +62,11 @@ public class ContractController : ControllerBase
             signedAt = contract.SignedAt
         });
     }
+
+    // Returns the generated contract PDF for download.
     [HttpGet("{contractId}/document")]
     public async Task<IActionResult> GetContractDocument(
-    Guid contractId)
+        Guid contractId)
     {
         var contract = await _contractRepository.GetByIdAsync(contractId);
 
@@ -83,9 +88,11 @@ public class ContractController : ControllerBase
             "application/pdf",
             $"contract-{contract.Id}.pdf");
     }
+
+    // Signs the specified contract.
     [HttpPost("{contractId}/sign")]
     public async Task<IActionResult> SignContract(
-    Guid contractId)
+        Guid contractId)
     {
         var contract = await _signContractHandler.Handle(
             new SignContractCommand

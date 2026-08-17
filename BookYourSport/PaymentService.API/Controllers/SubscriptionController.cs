@@ -14,6 +14,7 @@ public class SubscriptionController : ControllerBase
         _handler = handler;
     }
 
+    // Processes the user's subscription payment after the contract has been signed.
     [HttpPost("pay")]
     public async Task<IActionResult> Pay(
         [FromBody] PaySubscriptionCommand command)

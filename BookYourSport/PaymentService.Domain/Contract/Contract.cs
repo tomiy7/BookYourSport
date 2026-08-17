@@ -25,12 +25,17 @@ public class Contract
         Id = Guid.NewGuid();
         UserId = userId;
         DocumentPath = documentPath;
+
+        // Newly generated contracts await the user's signature.
         Status = ContractStatus.PendingSignature;
+
         CreatedAt = DateTime.UtcNow;
     }
 
+    // Signs the contract and records the time when it was signed.
     public void Sign()
     {
+        // A contract can only be signed while it is awaiting signature.
         if (Status != ContractStatus.PendingSignature)
             throw new InvalidOperationException(
                 "Contract is not waiting for signature.");

@@ -22,6 +22,7 @@ public class GenerateContractHandler
     public async Task<Contract> Handle(
         GenerateContractCommand command)
     {
+        // Retrieve user data from Auth Service before generating the contract.
         var user = await _authServiceClient.GetUserAsync(
             command.UserId);
 
@@ -31,16 +32,19 @@ public class GenerateContractHandler
                 "User was not found.");
         }
 
+        // Generate the contract document using the user's data.
         var documentPath =
             await _pdfContractGenerator.GenerateContractAsync(
                 user.Id,
                 user.FirstName,
                 user.LastName);
 
+        // Create the domain contract with the generated document.
         var contract = new Contract(
             user.Id,
             documentPath);
 
+        // Persist the newly generated contract.
         await _contractRepository.AddAsync(contract);
         await _contractRepository.SaveChangesAsync();
 

@@ -4,6 +4,7 @@ using QuestPDF.Infrastructure;
 
 namespace PaymentService.Infrastructure.Documents;
 
+// Defines the content and layout of the club owner subscription agreement.
 public class ContractPdfDocument : IDocument
 {
     private readonly Guid _contractId;

@@ -1,10 +1,10 @@
-﻿using System;
-using PaymentService.Domain.Enums;
+﻿using PaymentService.Domain.Enums;
 
 namespace PaymentService.Domain.Entities;
 
 public class Transaction
 {
+    // Creates a transaction after validating its amount and type.
     internal Transaction(
         int amount,
         TransactionType type,
@@ -28,8 +28,12 @@ public class Transaction
     }
 
     public Guid Id { get; private set; }
+
     public int Amount { get; private set; }
+
     public TransactionType Type { get; private set; }
+
     public DateTime CreatedAt { get; private set; }
+
     public Guid? ReferenceId { get; private set; }
 }

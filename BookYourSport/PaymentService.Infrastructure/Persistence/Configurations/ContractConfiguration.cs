@@ -8,6 +8,7 @@ public class ContractConfiguration : IEntityTypeConfiguration<Contract>
 {
     public void Configure(EntityTypeBuilder<Contract> builder)
     {
+        // Configure contract persistence and store the status enum as a readable string.
         builder.ToTable("Contracts");
 
         builder.HasKey(x => x.Id);

@@ -14,6 +14,7 @@ public class ChargeController : ControllerBase
         _handler = handler;
     }
 
+    // Charges the user's credit account for a reservation.
     [HttpPost]
     public async Task<IActionResult> Charge(
         [FromBody] ChargeCreditCommand command)

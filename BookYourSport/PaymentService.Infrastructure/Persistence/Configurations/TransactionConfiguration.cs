@@ -8,8 +8,11 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
 {
     public void Configure(EntityTypeBuilder<Transaction> builder)
     {
+        // Configure transaction persistence, including the optional reference to the related operation.
         builder.ToTable("Transactions");
+
         builder.HasKey(x => x.Id);
+
         builder.Property(x => x.Id)
             .ValueGeneratedNever();
 

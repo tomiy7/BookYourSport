@@ -28,14 +28,17 @@ public class SignContractHandler
                 "Contract was not found.");
         }
 
+        // A contract can only be signed while it is awaiting signature.
         if (contract.Status != ContractStatus.PendingSignature)
         {
             throw new InvalidOperationException(
                 "Contract is not pending signature.");
         }
 
+        // Apply the signing operation through the domain entity.
         contract.Sign();
 
+        // Persist the updated contract after it has been signed.
         await _contractRepository.SaveChangesAsync();
 
         return contract;

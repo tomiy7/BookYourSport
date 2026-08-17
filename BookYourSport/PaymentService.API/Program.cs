@@ -14,29 +14,39 @@ using PaymentService.Infrastructure.Persistence;
 using PaymentService.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
-QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
-// Add services to the container.
+
+QuestPDF.Settings.License =
+    QuestPDF.Infrastructure.LicenseType.Community;
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
+// Register payment and credit account services.
 builder.Services.AddScoped<IPaymentProcessor, MockPaymentProcessor>();
 builder.Services.AddScoped<ICreditAccountRepository, CreditAccountRepository>();
+
 builder.Services.AddScoped<TopUpCreditHandler>();
 builder.Services.AddScoped<ChargeCreditHandler>();
 builder.Services.AddScoped<RefundCreditHandler>();
 builder.Services.AddScoped<RefundPolicy>();
+
+// Configure the Payment Service database.
 builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("PaymentDb")));
+
+// Configure communication with Auth Service.
 builder.Services.AddHttpClient<IAuthServiceClient, AuthServiceClient>(client =>
 {
     client.BaseAddress = new Uri(
         builder.Configuration["AuthService:BaseUrl"]!);
 });
+
 builder.Services.AddScoped<PaySubscriptionHandler>();
+
+// Register contract generation and persistence services.
 builder.Services.AddScoped<
     IPdfContractGenerator,
     PdfContractGenerator>();
@@ -44,11 +54,13 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IContractRepository,
     ContractRepository>();
+
 builder.Services.AddScoped<GenerateContractHandler>();
 builder.Services.AddScoped<SignContractHandler>();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure API documentation and Swagger for development.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

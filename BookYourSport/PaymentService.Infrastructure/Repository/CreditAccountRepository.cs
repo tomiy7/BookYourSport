@@ -14,12 +14,14 @@ public class CreditAccountRepository : ICreditAccountRepository
         _dbContext = dbContext;
     }
 
+    // Retrieves the credit account belonging to the specified user.
     public async Task<CreditAccount?> GetByUserIdAsync(Guid userId)
     {
         return await _dbContext.CreditAccounts
             .FirstOrDefaultAsync(x => x.UserId == userId);
     }
 
+    // Adds a new credit account when necessary and persists the current account state.
     public async Task SaveAsync(CreditAccount account)
     {
         var existingAccount = await _dbContext.CreditAccounts

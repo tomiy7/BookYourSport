@@ -10,8 +10,10 @@ public class PdfContractGenerator : IPdfContractGenerator
         string firstName,
         string lastName)
     {
+        // Generate a unique identifier for the contract document.
         var contractId = Guid.NewGuid();
 
+        // Store generated contracts in the application's documents directory.
         var directory = Path.Combine(
             AppContext.BaseDirectory,
             "documents",
@@ -23,6 +25,7 @@ public class PdfContractGenerator : IPdfContractGenerator
             directory,
             $"{contractId}.pdf");
 
+        // Create and render the contract PDF using the user's information.
         var document = new ContractPdfDocument(
             contractId,
             firstName,
