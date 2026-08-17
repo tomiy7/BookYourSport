@@ -11,6 +11,7 @@ public class ReservationDbContext : DbContext
         : base(options) { }
     
     public DbSet<TennisClub> TennisClubs => Set<TennisClub>();
+    public DbSet<Reservation> Reservations => Set<Reservation>();
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -34,6 +35,7 @@ public class ReservationDbContext : DbContext
         modelBuilder.ApplyConfiguration(new TennisClubConfiguration());
         modelBuilder.ApplyConfiguration(new CourtConfiguration());
         modelBuilder.ApplyConfiguration(new WorkingHoursConfiguration());
+        modelBuilder.ApplyConfiguration(new ReservationConfiguration());
         
         base.OnModelCreating(modelBuilder);
     }
