@@ -58,6 +58,8 @@ public class CreateClubDto
     
     [Required, MaxLength(20)]
     public string StreetNumber { get; set; } = string.Empty;
+    
+    public List<CreateWorkingHoursDto>? WorkingHours { get; set; }
 }
 
 public class UpdateClubDto
