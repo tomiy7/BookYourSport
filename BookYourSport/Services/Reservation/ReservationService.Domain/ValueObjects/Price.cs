@@ -26,6 +26,8 @@ public class Price : ValueObject
        return new Price(amount, currency.ToUpperInvariant());
     }
     
+    public Price Multiply(decimal factor) => Create(Amount * factor, Currency);
+    
     protected override IEnumerable<object> GetEqualityComponents()
     {
         yield return Amount;

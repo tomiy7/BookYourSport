@@ -7,6 +7,9 @@ namespace ReservationService.Domain.Entities;
 
 public class Reservation : AggregateRoot
 {
+    private static readonly TimeSpan MinDuration = TimeSpan.FromHours(1);
+    private static readonly TimeSpan MaxDuration = TimeSpan.FromHours(4);
+    
     public Guid CourtId { get; private set; }
     public Guid ClubId { get; private set; }
     public Guid UserId { get; private set; }
@@ -80,5 +83,16 @@ public class Reservation : AggregateRoot
             throw new ReservationDomainException("Start time must be before end time.");
         if (startTime < DateTime.UtcNow)
             throw new ReservationDomainException("Can not book a reservation in the past.");
+        
+        var duration = endTime - startTime;
+        
+        if (duration < MinDuration)
+            throw new ReservationDomainException($"Reservation must be at least {MinDuration.TotalHours} hour(s) long.");
+        if (duration > MaxDuration)
+            throw new ReservationDomainException($"Reservation can not be longer than {MaxDuration.TotalHours} hours.");
+        if (duration.Ticks % MinDuration.Ticks != 0)
+            throw new ReservationDomainException("Reservation duration must be a whole number of hours.");
+        if (startTime.Minute != 0 || startTime.Second != 0)
+            throw new ReservationDomainException("Reservation must start at the top of the hour.");
     }
 }
