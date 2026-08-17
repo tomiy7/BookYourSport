@@ -35,7 +35,7 @@ public class ClubService : IClubService
 
     public async Task<ClubDto> CreateClubAsync(CreateClubDto clubDto)
     {
-        var address = Address.Create(clubDto.City, clubDto.State, clubDto.ZipCode, clubDto.Street, clubDto.Country, clubDto.StreetNumber);
+        var address = Address.Create(clubDto.City, clubDto.Municipality, clubDto.ZipCode, clubDto.Street, clubDto.Country, clubDto.StreetNumber);
         var club = TennisClub.Create(clubDto.Name, clubDto.OwnerId, clubDto.Description, clubDto.PhoneNumber, clubDto.EmailAddress, address);
 
         if (clubDto.WorkingHours != null)
@@ -60,7 +60,7 @@ public class ClubService : IClubService
             return null;
         }
         
-        var address = Address.Create(clubDto.City, clubDto.State, clubDto.ZipCode, clubDto.Street, clubDto.Country, clubDto.StreetNumber);
+        var address = Address.Create(clubDto.City, clubDto.Municipality, clubDto.ZipCode, clubDto.Street, clubDto.Country, clubDto.StreetNumber);
         club.UpdateDetails(clubDto.Name, clubDto.Description, clubDto.PhoneNumber, clubDto.EmailAddress, address);
         
         _clubRepository.Update(club);
@@ -98,7 +98,7 @@ public class ClubService : IClubService
         Address = new AddressDto
         {
             City = club.Address.City,
-            State = club.Address.State,
+            Municipality = club.Address.Municipality,
             ZipCode = club.Address.ZipCode,
             Street = club.Address.Street,
             Country = club.Address.Country,

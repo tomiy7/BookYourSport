@@ -10,6 +10,7 @@ public class CourtConfiguration : IEntityTypeConfiguration<Court>
     {
         builder.ToTable("courts");
         builder.HasKey(c => c.Id);
+        builder.Property(c => c.Id).ValueGeneratedNever(); 
         builder.Property(c => c.Name).HasMaxLength(50).IsRequired();
         builder.Property(c => c.SurfaceType).HasConversion<string>().HasMaxLength(10);
 

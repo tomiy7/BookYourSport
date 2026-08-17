@@ -10,6 +10,7 @@ public class WorkingHoursConfiguration : IEntityTypeConfiguration<WorkingHours>
     {
         builder.ToTable("working_hours");
         builder.HasKey(x => x.Id);
+        builder.Property(w => w.Id).ValueGeneratedNever();
         builder.Property(w => w.DayOfWeek).HasConversion<string>().HasMaxLength(15);
         
         builder.HasIndex(w => new { w.ClubId, w.DayOfWeek }).IsUnique();

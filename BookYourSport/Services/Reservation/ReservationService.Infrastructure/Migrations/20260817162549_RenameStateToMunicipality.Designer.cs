@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ReservationService.Infrastructure.Data;
@@ -11,9 +12,11 @@ using ReservationService.Infrastructure.Data;
 namespace ReservationService.Infrastructure.Migrations
 {
     [DbContext(typeof(ReservationDbContext))]
-    partial class ReservationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817162549_RenameStateToMunicipality")]
+    partial class RenameStateToMunicipality
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -25,6 +28,7 @@ namespace ReservationService.Infrastructure.Migrations
             modelBuilder.Entity("ReservationService.Domain.Entities.Court", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ClubId")
@@ -68,6 +72,7 @@ namespace ReservationService.Infrastructure.Migrations
             modelBuilder.Entity("ReservationService.Domain.Entities.TennisClub", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("CreatedBy")
@@ -110,6 +115,7 @@ namespace ReservationService.Infrastructure.Migrations
             modelBuilder.Entity("ReservationService.Domain.Entities.WorkingHours", b =>
                 {
                     b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<TimeOnly>("CloseTime")

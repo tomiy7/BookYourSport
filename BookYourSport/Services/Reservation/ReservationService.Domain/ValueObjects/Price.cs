@@ -16,7 +16,7 @@ public class Price : ValueObject
         Currency = currency;
     }
 
-    public static Price Create(decimal amount, string currency)
+    public static Price Create(decimal amount, string currency = "RSD")
     {
        if (amount < 0)
            throw new ReservationDomainException("Amount must be greater than or equal to zero");

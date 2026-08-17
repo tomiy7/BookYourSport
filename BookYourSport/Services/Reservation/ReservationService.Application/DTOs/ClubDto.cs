@@ -6,7 +6,7 @@ namespace ReservationService.Application.DTOs;
 public class AddressDto
 {
     public string City { get; set; } = string.Empty;
-    public string? State { get; set; }
+    public string? Municipality { get; set; }
     public string? ZipCode { get; set; }
     public string Street { get; set; } = string.Empty;
     public string Country { get; set; } = string.Empty;
@@ -46,7 +46,7 @@ public class CreateClubDto
     [Required, MaxLength(100)]
     public string City { get; set; } = string.Empty;
     
-    public string? State { get; set; }
+    public string? Municipality { get; set; }
     
     public string? ZipCode { get; set; }
     
@@ -78,7 +78,7 @@ public class UpdateClubDto
     [Required, MaxLength(100)]
     public string City { get; set; } = string.Empty;
     
-    public string? State { get; set; }
+    public string? Municipality { get; set; }
     
     public string? ZipCode { get; set; }
     
