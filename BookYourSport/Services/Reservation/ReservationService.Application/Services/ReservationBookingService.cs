@@ -135,17 +135,31 @@ public class ReservationBookingService : IReservationService
 
     public async Task<bool> CancelReservationAsync(Guid reservationId)
     {
-        throw new NotImplementedException();
+        var reservation = await _reservationRepository.GetByIdAsync(reservationId);
+
+        if (reservation == null)
+        {
+            _logger.LogWarning("Attempted to cancel non-existent reservation {ReservationId}", reservationId);
+            return false;
+        }
+        
+        reservation.Cancel();
+        await _reservationRepository.SaveChangesAsync();
+        
+        _logger.LogInformation("Reservation {ReservationId} cancelled", reservationId);
+        return true;
     }
 
     public async Task<List<ReservationDto>> GetByUserIdAsync(Guid userId)
     {
-        throw new NotImplementedException();
+        var reservations = await _reservationRepository.GetByUserAsync(userId);
+        return reservations.Select(MapToDto).ToList();
     }
 
     public async Task<List<ReservationDto>> GetByClubIdAsync(Guid clubId)
     {
-        throw new NotImplementedException();
+        var reservations = await _reservationRepository.GetByClubAsync(clubId);
+        return reservations.Select(MapToDto).ToList();
     }
 
     private static ReservationDto MapToDto(Reservation r) => new()
