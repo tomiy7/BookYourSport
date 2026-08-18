@@ -1,8 +1,18 @@
+using SearchService.Application.Interfaces;
+using SearchService.Application.Services;
+using SearchService.Infrastructure.Clients;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddHttpClient<IReservationServiceClient, ReservationServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["Services:ReservationServiceUrl"]!);
+});
+builder.Services.AddScoped<IClubSearchService, ClubSearchService>();
+
 
 var app = builder.Build();
 
