@@ -81,9 +81,56 @@ public class ReservationBookingService : IReservationService
         return MapToDto(reservation);
     }
 
-    public async Task<ReservationDto?> RescheduleReservationAsync(Guid reservationId, RescueReservationDto rescueReservationDto)
+    public async Task<ReservationDto?> RescheduleReservationAsync(Guid reservationId, ResceduleReservationDto resceduleReservationDto)
     {
-        throw new NotImplementedException();
+        var reservation = await _reservationRepository.GetByIdAsync(reservationId);
+
+        if (reservation == null)
+        {
+            _logger.LogWarning("Attempted to reschedule non-existent reservation {ReservationId}", reservationId);
+            return null;
+        }
+        
+        var newStartTime = DateTime.SpecifyKind(resceduleReservationDto.NewStartTime, DateTimeKind.Utc);
+        var newEndTime = DateTime.SpecifyKind(resceduleReservationDto.NewEndTime, DateTimeKind.Utc);
+        
+        var club = await _clubRepository.GetByIdAsync(reservation.ClubId);
+        var court = club?.Courts.FirstOrDefault(c => c.Id == reservation.CourtId);
+
+        if (club == null || court == null)
+        {
+            _logger.LogWarning("Reschedule attempted but club {ClubId} or court {CourtId} no longer exists", reservation.ClubId, reservation.CourtId);
+            throw new ReservationDomainException("Club or court no longer exists.");
+        }
+        
+        if (!club.IsActive)
+            throw new ReservationDomainException("Club is not active.");
+        if (!court.IsActive)
+            throw new ReservationDomainException("Court is not active.");
+        
+        if (!club.IsOpenDuring(newStartTime, newEndTime))
+            throw new ReservationDomainException("Club is not open for the entire requested time range.");
+        
+        if (await _reservationRepository.HasOverlapAsync(
+                court.Id, newStartTime, newEndTime, excludeReservationId: reservationId))
+            throw new ReservationDomainException("This time slot is already booked.");
+        
+        reservation.Reschedule(newStartTime, newEndTime);
+
+        try
+        {
+            await _reservationRepository.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            _logger.LogWarning(
+                "Reschedule blocked by database constraint for reservation {ReservationId}", reservationId);
+            throw new ReservationDomainException("This time slot was just booked by someone else.");
+        }
+        
+        _logger.LogInformation("Reservation {ReservationId} rescheduled to {NewStartTime}", reservationId, newStartTime);
+
+        return MapToDto(reservation);
     }
 
     public async Task<bool> CancelReservationAsync(Guid reservationId)
