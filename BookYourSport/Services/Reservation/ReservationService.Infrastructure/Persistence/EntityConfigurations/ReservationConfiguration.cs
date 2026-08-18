@@ -12,7 +12,7 @@ public class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
         
-        builder.Property(r => r.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(r => r.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(20);
         
         builder.OwnsOne(r => r.Price, price =>
         {
@@ -23,7 +23,9 @@ public class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
         // in the project won't cover on the database level the overlap where 
         // fe. someone wants a slot from 10:00-12:00 and another person from 11:00-12:00
         // on the database level it is allowed, but it will be covered if the repository
-        builder.HasIndex(r => new { r.CourtId, r.StartTime }).IsUnique();
+        builder.HasIndex(r => new { r.CourtId, r.StartTime })
+            .IsUnique()
+            .HasFilter("status != 'Cancelled'");;
         
         builder.HasIndex(r => r.UserId);
         builder.HasIndex(r => r.ClubId);

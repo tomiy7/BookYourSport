@@ -26,7 +26,7 @@ public class CreateReservationDto
     public DateTime EndTime { get; set; }
 }
 
-public class ResceduleReservationDto
+public class RescheduleReservationDto
 {
     [Required]
     public DateTime NewStartTime { get; set; }

@@ -81,7 +81,7 @@ public class ReservationBookingService : IReservationService
         return MapToDto(reservation);
     }
 
-    public async Task<ReservationDto?> RescheduleReservationAsync(Guid reservationId, ResceduleReservationDto resceduleReservationDto)
+    public async Task<ReservationDto?> RescheduleReservationAsync(Guid reservationId, RescheduleReservationDto rescheduleReservationDto)
     {
         var reservation = await _reservationRepository.GetByIdAsync(reservationId);
 
@@ -91,8 +91,8 @@ public class ReservationBookingService : IReservationService
             return null;
         }
         
-        var newStartTime = DateTime.SpecifyKind(resceduleReservationDto.NewStartTime, DateTimeKind.Utc);
-        var newEndTime = DateTime.SpecifyKind(resceduleReservationDto.NewEndTime, DateTimeKind.Utc);
+        var newStartTime = DateTime.SpecifyKind(rescheduleReservationDto.NewStartTime, DateTimeKind.Utc);
+        var newEndTime = DateTime.SpecifyKind(rescheduleReservationDto.NewEndTime, DateTimeKind.Utc);
         
         var club = await _clubRepository.GetByIdAsync(reservation.ClubId);
         var court = club?.Courts.FirstOrDefault(c => c.Id == reservation.CourtId);
@@ -115,7 +115,9 @@ public class ReservationBookingService : IReservationService
                 court.Id, newStartTime, newEndTime, excludeReservationId: reservationId))
             throw new ReservationDomainException("This time slot is already booked.");
         
-        reservation.Reschedule(newStartTime, newEndTime);
+        var durationInHours = (decimal)(newEndTime - newStartTime).TotalHours;
+        var newPrice = court.PricePerHour.Multiply(durationInHours);
+        reservation.Reschedule(newStartTime, newEndTime, newPrice);
 
         try
         {

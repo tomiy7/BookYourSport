@@ -61,20 +61,17 @@ public class Reservation : AggregateRoot
     
     // For now only supports the rescheduling with the same duration of the slot
     // Will be changed once we align on the approach
-    public void Reschedule(DateTime newStartTime, DateTime newEndTime)
+    public void Reschedule(DateTime newStartTime, DateTime newEndTime, Price newPrice)
     {
         if (Status == ReservationStatus.Cancelled)
             throw new ReservationDomainException("Cannot reschedule a cancelled reservation.");
         
         ValidateTimeRange(newStartTime, newEndTime);
         
-        var originalDuration = EndTime - StartTime;
-        var newDuration = newEndTime - newStartTime;
-        if (newDuration != originalDuration)
-            throw new ReservationDomainException("Rescheduling can not change the reservation duration.");
-        
+        // allowed different duration
         StartTime = newStartTime;
         EndTime = newEndTime;
+        Price = newPrice;
     }
     
     private static void ValidateTimeRange(DateTime startTime, DateTime endTime)

@@ -18,6 +18,7 @@ builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IClubService, ClubService>();
 builder.Services.AddScoped<ICourtService, CourtService>();
 builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
+builder.Services.AddScoped<IReservationService, ReservationBookingService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
