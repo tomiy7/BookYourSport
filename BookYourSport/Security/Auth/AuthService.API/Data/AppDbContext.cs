@@ -37,7 +37,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<User>()
             .ToTable(t => t.HasCheckConstraint(
                 "CK_Users_Status",
-                $"status IN ('{UserStatus.Pending}', '{UserStatus.Approved}')"
-    ));
+                $"status IN ('', '{UserStatus.Pending}', '{UserStatus.Approved}')"
+            ));
     }
 }

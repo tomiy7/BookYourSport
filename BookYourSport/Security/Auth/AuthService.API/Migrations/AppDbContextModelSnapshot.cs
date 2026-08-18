@@ -122,7 +122,7 @@ namespace AuthService.API.Migrations
                         {
                             t.HasCheckConstraint("CK_Users_Role", "role IN ('player', 'club', 'admin')");
 
-                            t.HasCheckConstraint("CK_Users_Status", "status IN ('pending', 'approved')");
+                            t.HasCheckConstraint("CK_Users_Status", "status IN ('', 'pending', 'approved')");
                         });
                 });
 
