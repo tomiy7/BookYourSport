@@ -105,4 +105,15 @@ public class TennisClub : AggregateRoot
         var time = TimeOnly.FromDateTime(dateTime);
         return time >= hours.OpenTime && time <= hours.CloseTime;
     }
+
+    public bool IsOpenDuring(DateTime startTime, DateTime endTime)
+    {
+        var hours = _workingHours.FirstOrDefault(w => w.DayOfWeek == startTime.DayOfWeek);
+        if (hours == null || hours.IsClosed) return false;
+        
+        var start = TimeOnly.FromDateTime(startTime);
+        var end = TimeOnly.FromDateTime(endTime);
+
+        return start >= hours.OpenTime && end <= hours.CloseTime;
+    }
 }
