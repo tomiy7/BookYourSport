@@ -34,5 +34,10 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<User>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_Users_Status",
+                $"status IN ('{UserStatus.Pending}', '{UserStatus.Approved}')"
+    ));
     }
 }

@@ -77,6 +77,111 @@ public class AuthController : ControllerBase
             tokens);
     }
 
+    [HttpPost("register/club")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> RegisterClubOwnerAsync(
+    ClubOwnerRegisterRequestDto registerRequestDto)
+    {
+        if (await _userRepository.EmailExistsAsync(registerRequestDto.Email))
+        {
+            _logger.LogWarning(
+                "Club owner registration failed: email {Email} already exists",
+                registerRequestDto.Email);
+
+            return Conflict(new ErrorResponseDto
+            {
+                Error = AuthErrorCodes.EmailExists,
+                Message = "Email already exists"
+            });
+        }
+
+        var user = new User
+        {
+            FirstName = registerRequestDto.FirstName,
+            LastName = registerRequestDto.LastName,
+            Email = registerRequestDto.Email,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(
+                registerRequestDto.Password),
+            City = registerRequestDto.City,
+            DateOfBirth = registerRequestDto.DateOfBirth,
+            Role = Roles.Club,
+            Status = UserStatus.Pending
+        };
+
+        await _userRepository.AddUserAsync(user);
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Club owner {Email} registered with pending status. Id: {UserId}",
+            user.Email,
+            user.Id);
+
+        var tokens = await IssueTokens(user);
+
+        return StatusCode(
+            StatusCodes.Status201Created,
+            tokens);
+    }
+
+    [HttpGet("users/{userId:guid}")]
+    public async Task<IActionResult> GetUserAsync(Guid userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new UserDetailsResponseDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            City = user.City,
+            DateOfBirth = user.DateOfBirth,
+            Role = user.Role,
+            Status = user.Status
+        });
+    }
+    [HttpPost("subscription-paid")]
+    public async Task<IActionResult> SubscriptionPaidAsync(
+    SubscriptionPaidRequestDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(request.UserId);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        if (user.Role != Roles.Club)
+        {
+            return BadRequest("User is not a club owner.");
+        }
+
+        if (user.Status != UserStatus.Pending)
+        {
+            return BadRequest("Club owner is not pending.");
+        }
+
+        user.Status = UserStatus.Approved;
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Club owner {UserId} approved after successful subscription payment. " +
+            "PaymentId: {PaymentId}, ContractId: {ContractId}",
+            user.Id,
+            request.PaymentId,
+            request.ContractId);
+
+        return Ok();
+    }
+
+
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(
@@ -215,4 +320,5 @@ public class AuthController : ControllerBase
             RefreshToken = refreshTokenValue
         };
     }
+
 }

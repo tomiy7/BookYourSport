@@ -1,0 +1,19 @@
+services:
+  payment_db:
+    image: postgres:16
+    container_name: payment_db
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+  payment_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: payment_api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - payment_db
