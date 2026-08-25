@@ -11,3 +11,15 @@ services:
       - "5434:5432"
     volumes:
       - reservation_data:/var/lib/postgresql/data
+        
+  reservation.api:
+    container_name: reservation.api
+    depends_on:
+      - reservationdb
+    ports:
+      - "5002:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__Default=Host=reservationdb;Port=5432;Database=reservationdb;Username=reservation_user;Password=${DB_PASSWORD}
+      - Jwt__Secret=${JWT_SECRET}

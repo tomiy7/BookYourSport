@@ -3,6 +3,11 @@ services:
   reservationdb:
     image: postgres:16
     
+  reservation.api:
+    build:
+      context: ${PWD}
+      dockerfile: Services/Reservation/ReservationService.API/Dockerfile
+    
 volumes:
   reservation_data:
     
