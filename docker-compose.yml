@@ -1,10 +1,19 @@
 services:
-  
+
   authdb:
     image: postgres:16
+  
+  reservationdb:
+    image: postgres:16
+    
+  reservation.api:
+    build:
+      context: ${PWD}
+      dockerfile: Services/Reservation/ReservationService.API/Dockerfile
     
 volumes:
   auth_data:
+  reservation_data:
     
 networks:
   backend:
