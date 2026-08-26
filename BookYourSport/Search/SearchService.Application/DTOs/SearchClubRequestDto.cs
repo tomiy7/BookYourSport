@@ -17,6 +17,7 @@ public class SearchClubsRequestDto
 
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
+    public string? Address { get; set; }
     public double? MaxDistanceKm { get; set; }
 
     public string? SortBy { get; set; }

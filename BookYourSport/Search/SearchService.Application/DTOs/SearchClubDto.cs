@@ -16,6 +16,8 @@ public class SearchClubDto
     public List<SearchCourtDto> Courts { get; set; } = new();
 
     public double? DistanceKm { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
 }
 
 public class SearchCourtDto

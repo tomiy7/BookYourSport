@@ -7,7 +7,10 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5434:5432"
+      - "5435:5432"
+    networks:
+      - backend
+
   payment_api:
     build:
       context: .
@@ -17,3 +20,10 @@ services:
       - "8080:8080"
     depends_on:
       - payment_db
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: bookyoursport-network

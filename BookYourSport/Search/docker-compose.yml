@@ -1,0 +1,14 @@
+
+services:
+  search-redis:
+    image: redis:7
+    container_name: search-redis
+    ports:
+      - "6380:6379"
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: bookyoursport-network

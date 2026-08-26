@@ -6,99 +6,168 @@ namespace SearchService.Application.Services;
 public class ClubSearchService : IClubSearchService
 {
     private readonly IReservationServiceClient _reservationServiceClient;
+    private readonly IGeocodingService _geocodingService;
 
-    public ClubSearchService(IReservationServiceClient reservationServiceClient)
+    public ClubSearchService(
+        IReservationServiceClient reservationServiceClient,
+        IGeocodingService geocodingService
+        )
     {
         _reservationServiceClient = reservationServiceClient;
+        _geocodingService = geocodingService;
+    }
+    private static double CalculateDistanceKm(
+        double latitude1,
+        double longitude1,
+        double latitude2,
+        double longitude2
+    )
+    {
+        const double earthRadiusKm = 6371.0;
+
+        var lat1 = DegreesToRadians(latitude1);
+        var lat2 = DegreesToRadians(latitude2);
+
+        var deltaLat = DegreesToRadians(latitude2 - latitude1);
+        var deltaLon = DegreesToRadians(longitude2 - longitude1);
+
+        var a =
+            Math.Sin(deltaLat / 2) * Math.Sin(deltaLat / 2) +
+            Math.Cos(lat1) *
+            Math.Cos(lat2) *
+            Math.Sin(deltaLon / 2) *
+            Math.Sin(deltaLon / 2);
+
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+
+        return earthRadiusKm * c;
+    }
+
+    private static double DegreesToRadians(double degrees)
+    {
+        return degrees * Math.PI / 180.0;
     }
 
     public async Task<SearchResultDto> SearchClubsAsync(SearchClubsRequestDto request)
     {
         var clubs = await _reservationServiceClient.GetClubsAsync();
 
-        IEnumerable<ReservationClubDto> filteredClubs = clubs;
-
-        if (!string.IsNullOrWhiteSpace(request.Name))
-        {
-            filteredClubs = filteredClubs.Where(c =>
-                c.Name.Contains(request.Name, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.City))
-        {
-            filteredClubs = filteredClubs.Where(c =>
-                c.Address.City.Contains(request.City, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Street))
-        {
-            filteredClubs = filteredClubs.Where(c =>
-                c.Address.Street.Contains(request.Street, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (request.SurfaceType.HasValue)
-        {
-            filteredClubs = filteredClubs.Where(c =>
-                c.Courts.Any(court =>
-                    court.IsActive &&
-                    court.SurfaceType == request.SurfaceType.Value));
-        }
-
-        if (request.IsIndoor.HasValue)
-        {
-            filteredClubs = filteredClubs.Where(c =>
-                c.Courts.Any(court =>
-                    court.IsActive &&
-                    court.IsIndoor == request.IsIndoor.Value));
-        }
-
-        if (request.MinPrice.HasValue || request.MaxPrice.HasValue)
-        {
-            filteredClubs = filteredClubs.Where(c =>
-                c.Courts.Any(court =>
-                    court.IsActive &&
-                    (!request.MinPrice.HasValue ||
-                     court.PricePerHour.Amount >= request.MinPrice.Value) &&
-                    (!request.MaxPrice.HasValue ||
-                     court.PricePerHour.Amount <= request.MaxPrice.Value)));
-        }
-
-        filteredClubs = filteredClubs.Where(c => c.IsActive);
-
-        filteredClubs = request.SortBy?.ToLowerInvariant() switch
-        {
-            "name" => filteredClubs.OrderBy(c => c.Name),
-
-            "price_asc" => filteredClubs.OrderBy(c =>
-                c.Courts
+        IEnumerable<FilteredClub> filteredResults = clubs
+            .Where(c => c.IsActive)
+            .Where(c =>
+                string.IsNullOrWhiteSpace(request.Name) ||
+                c.Name.Contains(request.Name, StringComparison.OrdinalIgnoreCase))
+            .Where(c =>
+                string.IsNullOrWhiteSpace(request.City) ||
+                c.Address.City.Contains(request.City, StringComparison.OrdinalIgnoreCase))
+            .Where(c =>
+                string.IsNullOrWhiteSpace(request.Street) ||
+                c.Address.Street.Contains(request.Street, StringComparison.OrdinalIgnoreCase))
+            .Select(c => new FilteredClub
+            {
+                Club = c,
+                Courts = c.Courts
                     .Where(court => court.IsActive)
+                    .Where(court =>
+                        !request.SurfaceType.HasValue ||
+                        court.SurfaceType == request.SurfaceType.Value)
+                    .Where(court =>
+                        !request.IsIndoor.HasValue ||
+                        court.IsIndoor == request.IsIndoor.Value)
+                    .Where(court =>
+                        !request.MinPrice.HasValue ||
+                        court.PricePerHour.Amount >= request.MinPrice.Value)
+                    .Where(court =>
+                        !request.MaxPrice.HasValue ||
+                        court.PricePerHour.Amount <= request.MaxPrice.Value)
+                    .ToList()
+            })
+            .Where(x => x.Courts.Any())
+            .ToList();
+
+        double? userLatitude = request.Latitude;
+        double? userLongitude = request.Longitude;
+
+        if (!string.IsNullOrWhiteSpace(request.Address))
+        {
+            var userLocation = await _geocodingService.GeocodeAsync(request.Address);
+
+            if (userLocation != null)
+            {
+                userLatitude = userLocation.Latitude;
+                userLongitude = userLocation.Longitude;
+            }
+        }
+
+        if (userLatitude.HasValue && userLongitude.HasValue)
+        {
+            foreach (var item in filteredResults)
+            {
+                var address =
+                    $"{item.Club.Address.Country}, " +
+                    $"{item.Club.Address.City}, " +
+                    $"{item.Club.Address.Street} " +
+                    $"{item.Club.Address.StreetNumber}";
+
+                var location = await _geocodingService.GeocodeAsync(address);
+
+                if (location != null)
+                {
+                    item.Latitude = location.Latitude;
+                    item.Longitude = location.Longitude;
+
+                    item.DistanceKm = CalculateDistanceKm(
+                        userLatitude.Value,
+                        userLongitude.Value,
+                        location.Latitude,
+                        location.Longitude);
+                }
+            }
+        }
+        if (request.MaxDistanceKm.HasValue)
+        {
+            filteredResults = filteredResults
+                .Where(x =>
+                    x.DistanceKm.HasValue &&
+                    x.DistanceKm.Value <= request.MaxDistanceKm.Value);
+        }
+
+        filteredResults = request.SortBy?.ToLowerInvariant() switch
+        {
+            "name" => filteredResults.OrderBy(x => x.Club.Name),
+
+            "price_asc" => filteredResults.OrderBy(x =>
+                x.Courts
                     .Select(court => court.PricePerHour.Amount)
-                    .DefaultIfEmpty()
                     .Min()),
 
-            "price_desc" => filteredClubs.OrderByDescending(c =>
-                c.Courts
-                    .Where(court => court.IsActive)
+            "price_desc" => filteredResults.OrderByDescending(x =>
+                x.Courts
                     .Select(court => court.PricePerHour.Amount)
-                    .DefaultIfEmpty()
                     .Min()),
-
-            _ => filteredClubs.OrderBy(c => c.Name)
+            "distance" => filteredResults
+                .OrderBy(x => x.DistanceKm ?? double.MaxValue),
+            _ => filteredResults.OrderBy(x => x.Club.Name)
         };
 
-        var totalCount = filteredClubs.Count();
+        var totalCount = filteredResults.Count();
 
         var page = request.Page < 1 ? 1 : request.Page;
         var pageSize = request.PageSize < 1 ? 20 : Math.Min(request.PageSize, 100);
 
-        var pagedClubs = filteredClubs
+        var pagedResults = filteredResults
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToList();
 
-        var result = pagedClubs
-            .Select(MapToSearchDto)
-            .ToList();
+        var result = pagedResults
+             .Select(x => MapToSearchDto(
+                    x.Club,
+                    x.Courts,
+                    x.DistanceKm,
+                    x.Latitude,
+                    x.Longitude))
+                .ToList();
 
         return new SearchResultDto
         {
@@ -109,8 +178,12 @@ public class ClubSearchService : IClubSearchService
             TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
         };
     }
-
-    private static SearchClubDto MapToSearchDto(ReservationClubDto club)
+    private static SearchClubDto MapToSearchDto(
+      ReservationClubDto club,
+      IEnumerable<ReservationCourtDto> courts,
+      double? distanceKm,
+      double? latitude,
+      double? longitude)
     {
         return new SearchClubDto
         {
@@ -120,10 +193,12 @@ public class ClubSearchService : IClubSearchService
             Street = club.Address.Street,
             StreetNumber = club.Address.StreetNumber,
             IsActive = club.IsActive,
-            DistanceKm = null,
 
-            Courts = club.Courts
-                .Where(c => c.IsActive)
+            Latitude = latitude,
+            Longitude = longitude,
+            DistanceKm = distanceKm,
+
+            Courts = courts
                 .Select(c => new SearchCourtDto
                 {
                     Id = c.Id,
@@ -136,4 +211,15 @@ public class ClubSearchService : IClubSearchService
                 .ToList()
         };
     }
+
+    private sealed class FilteredClub
+    {
+        public ReservationClubDto Club { get; init; } = null!;
+        public List<ReservationCourtDto> Courts { get; init; } = new();
+        public double? DistanceKm { get; set; }
+
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+    }
 }
+
