@@ -15,4 +15,10 @@ public class UserResponseDto
     public DateOnly DateOfBirth { get; set; }
 
     public string Role { get; set; } = string.Empty;
+
+    public string ApprovalStatus { get; set; } = string.Empty;
+
+    public string ContractStatus { get; set; } = string.Empty;
+
+    public string SubscriptionStatus { get; set; } = string.Empty;
 }

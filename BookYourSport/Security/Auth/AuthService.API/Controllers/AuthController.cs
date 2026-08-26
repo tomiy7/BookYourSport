@@ -31,6 +31,10 @@ public class AuthController : ControllerBase
         _tokenService = tokenService;
     }
 
+    // =========================
+    // AUTH ENDPOINTS
+    // =========================
+
     [HttpPost("register")]
     [ProducesResponseType(
         typeof(AuthResponseDto),
@@ -41,7 +45,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> RegisterAsync(
         RegisterRequestDto registerRequestDto)
     {
-        if (await _userRepository.EmailExistsAsync(registerRequestDto.Email))
+        if (await _userRepository.EmailExistsAsync(
+                registerRequestDto.Email))
         {
             _logger.LogWarning(
                 "Registration failed: email {Email} already exists",
@@ -63,7 +68,11 @@ public class AuthController : ControllerBase
                 registerRequestDto.Password),
             City = registerRequestDto.City,
             DateOfBirth = registerRequestDto.DateOfBirth,
-            Role = Roles.Player
+            Role = Roles.Player,
+
+            ApprovalStatus = ApprovalStatuses.NotRequested,
+            ContractStatus = ContractStatuses.NotGenerated,
+            SubscriptionStatus = SubscriptionStatuses.NotStarted
         };
 
         await _userRepository.AddUserAsync(user);
@@ -181,7 +190,10 @@ public class AuthController : ControllerBase
             Email = user.Email,
             City = user.City,
             DateOfBirth = user.DateOfBirth,
-            Role = user.Role
+            Role = user.Role,
+            ApprovalStatus = user.ApprovalStatus,
+            ContractStatus = user.ContractStatus,
+            SubscriptionStatus = user.SubscriptionStatus
         });
 
         return Ok(response);
@@ -211,7 +223,83 @@ public class AuthController : ControllerBase
             Email = user.Email,
             City = user.City,
             DateOfBirth = user.DateOfBirth,
-            Role = user.Role
+            Role = user.Role,
+            ApprovalStatus = user.ApprovalStatus,
+            ContractStatus = user.ContractStatus,
+            SubscriptionStatus = user.SubscriptionStatus
+        };
+
+        return Ok(response);
+    }
+
+    // =========================
+    // UPDATE APPROVAL STATUS
+    // =========================
+
+    [HttpPatch("users/{id:guid}/approval-status")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(
+        typeof(UserResponseDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ErrorResponseDto),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateApprovalStatusAsync(
+        Guid id,
+        UpdateApprovalStatusRequestDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var validStatuses = new[]
+        {
+            ApprovalStatuses.NotRequested,
+            ApprovalStatuses.Requested,
+            ApprovalStatuses.Approved,
+            ApprovalStatuses.Rejected
+        };
+
+        if (!validStatuses.Contains(request.ApprovalStatus))
+        {
+            return BadRequest(new ErrorResponseDto
+            {
+                Error = "invalid_approval_status",
+                Message =
+                    $"Invalid approval status. Allowed values are: " +
+                    $"{string.Join(", ", validStatuses)}."
+            });
+        }
+
+        var oldStatus = user.ApprovalStatus;
+
+        user.ApprovalStatus = request.ApprovalStatus;
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Approval status for user {UserId} changed from {OldStatus} to {NewStatus}",
+            user.Id,
+            oldStatus,
+            user.ApprovalStatus);
+
+        var response = new UserResponseDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            City = user.City,
+            DateOfBirth = user.DateOfBirth,
+            Role = user.Role,
+            ApprovalStatus = user.ApprovalStatus,
+            ContractStatus = user.ContractStatus,
+            SubscriptionStatus = user.SubscriptionStatus
         };
 
         return Ok(response);
@@ -250,6 +338,10 @@ public class AuthController : ControllerBase
             message = "You have access to the admin endpoint."
         });
     }
+
+    // =========================
+    // TOKEN GENERATION
+    // =========================
 
     private async Task<AuthResponseDto> IssueTokens(User user)
     {
