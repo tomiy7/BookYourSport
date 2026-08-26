@@ -1,0 +1,74 @@
+services:
+
+  reservationdb:
+
+    image: postgres:16
+
+    container_name: reservationdb
+
+    environment:
+
+      POSTGRES_DB: reservationdb
+
+      POSTGRES_USER: reservation_user
+
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    ports:
+
+      - "5434:5432"
+
+    restart: always
+
+    volumes:
+
+      - reservation_data:/var/lib/postgresql/data
+
+    networks:
+
+      - backend
+
+
+  reservation.api:
+
+    build:
+
+      context: ../..
+
+      dockerfile: Services/Reservation/ReservationService.API/Dockerfile
+
+    container_name: reservation.api
+
+    depends_on:
+
+      - reservationdb
+
+    ports:
+
+      - "5002:8080"
+
+    environment:
+
+      - ASPNETCORE_ENVIRONMENT=Development
+
+      - ASPNETCORE_URLS=http://+:8080
+
+      - ConnectionStrings__Default=Host=reservationdb;Port=5432;Database=reservationdb;Username=reservation_user;Password=${DB_PASSWORD}
+
+    networks:
+
+      - backend
+
+
+volumes:
+
+  reservation_data:
+
+
+networks:
+
+  backend:
+
+    external: true
+
+    name: bookyoursport-network
