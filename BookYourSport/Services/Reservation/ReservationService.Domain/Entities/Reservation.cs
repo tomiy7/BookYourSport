@@ -42,12 +42,15 @@ public class Reservation : AggregateRoot
         return new Reservation(courtId, clubId, userId, startTime, endTime, price);
     }
 
-    // logic will be changed once this connects with payment service
     public void Confirm()
     {
-        if (Status != ReservationStatus.Pending)     
-            throw new ReservationDomainException("Only pending reservations can be confirmed.");
-        
+        if (Status == ReservationStatus.Confirmed)
+            return;
+
+        if (Status != ReservationStatus.Pending)
+            throw new ReservationDomainException(
+                "Only pending reservations can be confirmed.");
+
         Status = ReservationStatus.Confirmed;
     }
 

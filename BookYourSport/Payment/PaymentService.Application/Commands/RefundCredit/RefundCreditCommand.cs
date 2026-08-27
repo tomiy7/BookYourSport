@@ -2,7 +2,7 @@
 
 public record RefundCreditCommand(
     Guid UserId,
-    int OriginalAmount,
+    decimal OriginalAmount,
     Guid ReferenceId,
     DateTime ReservationStart,
     DateTime CancellationTime);

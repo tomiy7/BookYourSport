@@ -1,4 +1,3 @@
-
 services:
   search-redis:
     image: redis:7

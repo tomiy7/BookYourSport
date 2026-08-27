@@ -54,6 +54,12 @@ services:
       - ASPNETCORE_URLS=http://+:8080
 
       - ConnectionStrings__Default=Host=reservationdb;Port=5432;Database=reservationdb;Username=reservation_user;Password=${DB_PASSWORD}
+      
+      - Jwt__Secret=${JWT_SECRET}
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - PaymentService__BaseUrl=http://payment_api:8080
 
     networks:
 

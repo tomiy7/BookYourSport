@@ -18,7 +18,8 @@ public class CreditAccountRepository : ICreditAccountRepository
     public async Task<CreditAccount?> GetByUserIdAsync(Guid userId)
     {
         return await _dbContext.CreditAccounts
-            .FirstOrDefaultAsync(x => x.UserId == userId);
+          .Include(x => x.Transactions)
+          .FirstOrDefaultAsync(x => x.UserId == userId);
     }
 
     // Adds a new credit account when necessary and persists the current account state.

@@ -1,4 +1,6 @@
+using Messaging.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using PaymentService.API.Exceptions;
 using PaymentService.Application.Commands.ChargeCredit;
 using PaymentService.Application.Commands.GenerateContract;
 using PaymentService.Application.Commands.PaySubscription;
@@ -9,6 +11,7 @@ using PaymentService.Application.Interfaces;
 using PaymentService.Domain.Services;
 using PaymentService.Infrastructure.Auth;
 using PaymentService.Infrastructure.Documents;
+using PaymentService.Infrastructure.Messaging;
 using PaymentService.Infrastructure.Payment;
 using PaymentService.Infrastructure.Persistence;
 using PaymentService.Infrastructure.Repositories;
@@ -57,8 +60,13 @@ builder.Services.AddScoped<
 
 builder.Services.AddScoped<GenerateContractHandler>();
 builder.Services.AddScoped<SignContractHandler>();
+builder.Services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure API documentation and Swagger for development.
 if (app.Environment.IsDevelopment())
@@ -68,6 +76,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 app.UseHttpsRedirection();
 

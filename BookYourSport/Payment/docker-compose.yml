@@ -13,13 +13,18 @@ services:
 
   payment_api:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: Payment/Dockerfile
     container_name: payment_api
     ports:
       - "8080:8080"
     depends_on:
       - payment_db
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
     networks:
       - backend
 
