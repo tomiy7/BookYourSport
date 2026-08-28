@@ -36,6 +36,21 @@ public class AuthServiceClient : IAuthServiceClient
         // Ensure that Auth Service successfully processed the notification.
         response.EnsureSuccessStatusCode();
     }
+    
+    public async Task NotifyContractGeneratedAsync(
+        Guid userId,
+        Guid contractId)
+    {
+        var response = await _httpClient.PostAsJsonAsync(
+            "/auth/contract-generated",
+            new
+            {
+                userId,
+                contractId
+            });
+
+        response.EnsureSuccessStatusCode();
+    }
 
     // Retrieves user information from Auth Service by user ID.
     public async Task<AuthUserDto?> GetUserAsync(Guid userId)

@@ -48,6 +48,11 @@ public class GenerateContractHandler
         await _contractRepository.AddAsync(contract);
         await _contractRepository.SaveChangesAsync();
 
+        // Notify Auth Service that the contract was generated.
+        await _authServiceClient.NotifyContractGeneratedAsync(
+            contract.UserId,
+            contract.Id);
+
         return contract;
     }
 }

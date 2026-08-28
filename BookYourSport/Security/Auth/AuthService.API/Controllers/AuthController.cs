@@ -306,6 +306,193 @@ public class AuthController : ControllerBase
     }
 
     // =========================
+    // UPDATE USER ROLE
+    // =========================
+
+    [HttpPatch("users/{id:guid}/role")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(
+        typeof(UserResponseDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ErrorResponseDto),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateUserRoleAsync(
+        Guid id,
+        UpdateUserRoleRequestDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var validRoles = new[]
+        {
+            Roles.Player,
+            Roles.Club,
+            Roles.Admin
+        };
+
+        if (!validRoles.Contains(request.Role))
+        {
+            return BadRequest(new ErrorResponseDto
+            {
+                Error = "invalid_role",
+                Message =
+                    $"Invalid role. Allowed values are: " +
+                    $"{string.Join(", ", validRoles)}."
+            });
+        }
+
+        if (request.Role == Roles.Club &&
+            user.ApprovalStatus != ApprovalStatuses.Approved)
+        {
+            return BadRequest(new ErrorResponseDto
+            {
+                Error = "club_role_requires_approval",
+                Message =
+                    "User must be approved before being assigned the club role."
+            });
+        }
+
+        var oldRole = user.Role;
+
+        user.Role = request.Role;
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Role for user {UserId} changed from {OldRole} to {NewRole}",
+            user.Id,
+            oldRole,
+            user.Role);
+
+        var response = new UserResponseDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            City = user.City,
+            DateOfBirth = user.DateOfBirth,
+            Role = user.Role,
+            ApprovalStatus = user.ApprovalStatus,
+            ContractStatus = user.ContractStatus,
+            SubscriptionStatus = user.SubscriptionStatus
+        };
+
+        return Ok(response);
+    }
+
+    // =========================
+    // PAYMENT / CONTRACT NOTIFICATIONS
+    // =========================
+
+    [HttpPost("contract-generated")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ContractGeneratedAsync(
+        ContractGeneratedNotificationDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(
+            request.UserId);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        user.ContractStatus = ContractStatuses.Generated;
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Contract {ContractId} generated for user {UserId}",
+            request.ContractId,
+            user.Id);
+
+        return Ok(new
+        {
+            user.Id,
+            user.Role,
+            user.ApprovalStatus,
+            user.ContractStatus,
+            user.SubscriptionStatus
+        });
+    }
+
+    [HttpPost("contract-signed")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ContractSignedAsync(
+        ContractSignedNotificationDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(
+            request.UserId);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        user.ContractStatus = ContractStatuses.Signed;
+
+        TryApproveClubOwner(user);
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Contract {ContractId} signed for user {UserId}",
+            request.ContractId,
+            user.Id);
+
+        return Ok(new
+        {
+            user.Id,
+            user.Role,
+            user.ApprovalStatus,
+            user.ContractStatus,
+            user.SubscriptionStatus
+        });
+    }
+
+    [HttpPost("subscription-paid")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SubscriptionPaidAsync(
+        SubscriptionPaidNotificationDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(
+            request.UserId);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        user.SubscriptionStatus = SubscriptionStatuses.Paid;
+
+        TryApproveClubOwner(user);
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Subscription payment {PaymentId} successful for user {UserId}",
+            request.PaymentId,
+            user.Id);
+
+        return Ok(new
+        {
+            user.Id,
+            user.Role,
+            user.ApprovalStatus,
+            user.ContractStatus,
+            user.SubscriptionStatus
+        });
+    }
+
+    // =========================
     // ROLE TEST ENDPOINTS
     // =========================
 
@@ -337,6 +524,24 @@ public class AuthController : ControllerBase
         {
             message = "You have access to the admin endpoint."
         });
+    }
+
+    // =========================
+    // HELPERS
+    // =========================
+
+    private static void TryApproveClubOwner(User user)
+    {
+        var canBeApproved =
+            user.ApprovalStatus == ApprovalStatuses.Requested &&
+            user.ContractStatus == ContractStatuses.Signed &&
+            user.SubscriptionStatus == SubscriptionStatuses.Paid;
+
+        if (!canBeApproved)
+            return;
+
+        user.ApprovalStatus = ApprovalStatuses.Approved;
+        user.Role = Roles.Club;
     }
 
     // =========================

@@ -9,6 +9,8 @@ public class FakeAuthServiceClient : IAuthServiceClient
 
     public bool SubscriptionPaidNotificationSent { get; private set; }
 
+    public bool ContractGeneratedNotificationSent { get; private set; }
+
     public Task<AuthUserDto?> GetUserAsync(Guid userId)
     {
         return Task.FromResult(User);
@@ -22,6 +24,15 @@ public class FakeAuthServiceClient : IAuthServiceClient
         string currency)
     {
         SubscriptionPaidNotificationSent = true;
+
+        return Task.CompletedTask;
+    }
+
+    public Task NotifyContractGeneratedAsync(
+        Guid userId,
+        Guid contractId)
+    {
+        ContractGeneratedNotificationSent = true;
 
         return Task.CompletedTask;
     }

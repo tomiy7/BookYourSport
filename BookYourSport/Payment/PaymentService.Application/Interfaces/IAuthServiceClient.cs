@@ -12,4 +12,8 @@ public interface IAuthServiceClient
         Guid contractId,
         decimal amount,
         string currency);
+    
+    Task NotifyContractGeneratedAsync(
+        Guid userId,
+        Guid contractId);
 }
