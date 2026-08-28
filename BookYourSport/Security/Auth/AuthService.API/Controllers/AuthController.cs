@@ -391,6 +391,22 @@ public class AuthController : ControllerBase
     // =========================
     // PAYMENT / CONTRACT NOTIFICATIONS
     // =========================
+    
+    [HttpGet("internal/users/{id:guid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetUserInternalAsync(Guid id)
+    {
+        var user = await _userRepository.GetUserByIdAsync(id);
+        if (user == null) return NotFound();
+
+        return Ok(new
+        {
+            user.Id,
+            user.FirstName,
+            user.LastName,
+            user.Email
+        });
+    }
 
     [HttpPost("contract-generated")]
     [AllowAnonymous]

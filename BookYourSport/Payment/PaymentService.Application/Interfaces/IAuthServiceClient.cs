@@ -16,4 +16,8 @@ public interface IAuthServiceClient
     Task NotifyContractGeneratedAsync(
         Guid userId,
         Guid contractId);
+    
+    Task NotifyContractSignedAsync(
+        Guid userId,
+        Guid contractId);
 }

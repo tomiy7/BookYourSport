@@ -52,11 +52,26 @@ public class AuthServiceClient : IAuthServiceClient
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task NotifyContractSignedAsync(
+        Guid userId,
+        Guid contractId)
+    {
+        var response = await _httpClient.PostAsJsonAsync(
+            "/auth/contract-signed",
+            new
+            {
+                userId,
+                contractId
+            });
+        
+        response.EnsureSuccessStatusCode();
+    }
+
     // Retrieves user information from Auth Service by user ID.
     public async Task<AuthUserDto?> GetUserAsync(Guid userId)
     {
         var response = await _httpClient.GetAsync(
-            $"/auth/users/{userId}");
+            $"/auth/internal/users/{userId}");
 
         // A missing user is represented by a null result.
         if (response.StatusCode == HttpStatusCode.NotFound)
