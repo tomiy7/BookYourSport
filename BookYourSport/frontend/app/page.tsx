@@ -8,7 +8,7 @@ export default function Home() {
         <header className={styles.header}>
           <Link href="/" className={styles.logo}>
             <Image
-                src="/logo_bys.png"
+                src="/logo.png"
                 alt="BookYourSport"
                 width={130}
                 height={50}
