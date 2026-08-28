@@ -1,0 +1,349 @@
+.page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    color: #1c1c1c;
+}
+
+/* HEADER */
+
+.header {
+    height: 76px;
+    padding: 0 8%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    background: #f4f8f5;
+    border-bottom: 1px solid #dfe8e2;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.logoImage {
+    width: 100px;
+    height: auto;
+    display: block;
+    transform: translateY(5px);
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.loginButton {
+    padding: 10px 20px;
+    border-radius: 8px;
+
+    color: #14532d;
+    font-weight: 600;
+    text-decoration: none;
+
+    transition: 0.2s;
+}
+
+.loginButton:hover {
+    background: #f0fdf4;
+}
+
+.registerButton {
+    padding: 10px 20px;
+    border-radius: 8px;
+
+    background: #15803d;
+    color: white;
+
+    font-weight: 600;
+    text-decoration: none;
+
+    transition: 0.2s;
+}
+
+.registerButton:hover {
+    background: #166534;
+}
+
+/* HERO */
+
+.hero {
+    padding: 110px 20px;
+    background:
+            linear-gradient(
+                    135deg,
+                    #ecfdf3 0%,
+                    #f7fff9 50%,
+                    #e7f8ed 100%
+            );
+}
+
+.heroContent {
+    max-width: 850px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.badge {
+    display: inline-block;
+
+    margin-bottom: 22px;
+    padding: 8px 16px;
+
+    border-radius: 999px;
+
+    background: #dcfce7;
+    color: #166534;
+
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.hero h1 {
+    margin-bottom: 22px;
+
+    font-size: clamp(42px, 6vw, 70px);
+    line-height: 1.05;
+    letter-spacing: -2px;
+}
+
+.hero h1 span {
+    color: #15803d;
+}
+
+.hero p {
+    max-width: 650px;
+    margin: 0 auto 35px;
+
+    color: #5f6368;
+    font-size: 19px;
+    line-height: 1.7;
+}
+
+/* SEARCH */
+
+.searchBox {
+    max-width: 700px;
+    margin: 0 auto;
+
+    display: flex;
+    gap: 10px;
+
+    padding: 8px;
+
+    background: white;
+    border-radius: 12px;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+}
+
+.searchBox input {
+    flex: 1;
+
+    padding: 15px 18px;
+
+    border: none;
+    outline: none;
+
+    font-size: 16px;
+}
+
+.searchBox button {
+    padding: 0 28px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #15803d;
+    color: white;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.searchBox button:hover {
+    background: #166534;
+}
+
+/* TENNIS SECTION */
+
+.courtsSection {
+    flex: 1;
+    padding: 100px 8%;
+}
+
+.sectionHeading {
+    max-width: 650px;
+    margin: 0 auto 55px;
+
+    text-align: center;
+}
+
+.sectionHeading span {
+    color: #15803d;
+
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.sectionHeading h2 {
+    margin: 12px 0 16px;
+
+    font-size: 42px;
+    letter-spacing: -1px;
+}
+
+.sectionHeading p {
+    color: #6b7280;
+    font-size: 17px;
+    line-height: 1.6;
+}
+
+.cards {
+    max-width: 1100px;
+    margin: 0 auto;
+
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+
+.card {
+    padding: 35px;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+
+    background: white;
+
+    transition: 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+}
+
+.cardIcon {
+    width: 52px;
+    height: 52px;
+
+    margin-bottom: 22px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background: #dcfce7;
+
+    font-size: 24px;
+}
+
+.card h3 {
+    margin-bottom: 12px;
+
+    font-size: 21px;
+}
+
+.card p {
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+/* FOOTER */
+
+.footer {
+    padding: 28px 8%;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    background: #14532d;
+    color: #dcfce7;
+}
+
+.footer p {
+    font-size: 14px;
+}
+
+.footerLinks {
+    display: flex;
+    gap: 24px;
+}
+
+.footerLinks a {
+    color: #dcfce7;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.footerLinks a:hover {
+    color: white;
+}
+
+/* MOBILE */
+
+@media (max-width: 768px) {
+    .header {
+        padding: 0 20px;
+    }
+
+    .logoImage {
+        width: 115px;
+        height: auto;
+    }
+
+    .nav {
+        gap: 4px;
+    }
+
+    .loginButton,
+    .registerButton {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .hero {
+        padding: 80px 20px;
+    }
+
+    .searchBox {
+        flex-direction: column;
+    }
+
+    .searchBox button {
+        height: 52px;
+    }
+
+    .courtsSection {
+        padding: 70px 20px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .footer {
+        flex-direction: column;
+        gap: 18px;
+
+        text-align: center;
+    }
+
+    .footerLinks {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

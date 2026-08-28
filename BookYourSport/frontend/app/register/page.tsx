@@ -91,184 +91,224 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="flex min-h-screen flex-col items-center bg-zinc-50 px-6 py-16 dark:bg-black">
-            <form
-                onSubmit={handleSubmit}
-                className="flex w-full max-w-sm flex-col gap-4"
-            >
-                <h1 className="mb-2 text-2xl font-semibold text-black dark:text-zinc-50">
-                    Registracija
-                </h1>
-
-                {error && (
-                    <p className="text-sm text-red-600 dark:text-red-400">
-                        {error}
-                    </p>
-                )}
-
-                <div>
-                    <label
-                        htmlFor="firstName"
-                        className="mb-1 block text-sm font-medium text-black dark:text-zinc-50"
-                    >
-                        Ime <span className="text-red-600">*</span>
-                    </label>
-
-                    <input
-                        id="firstName"
-                        name="firstName"
-                        type="text"
-                        value={form.firstName}
-                        onChange={handleChange}
-                        maxLength={50}
-                        required
-                        className="w-full rounded-md border border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                </div>
-
-                <div>
-                    <label
-                        htmlFor="lastName"
-                        className="mb-1 block text-sm font-medium text-black dark:text-zinc-50"
-                    >
-                        Prezime <span className="text-red-600">*</span>
-                    </label>
-
-                    <input
-                        id="lastName"
-                        name="lastName"
-                        type="text"
-                        value={form.lastName}
-                        onChange={handleChange}
-                        maxLength={50}
-                        required
-                        className="w-full rounded-md border border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                </div>
-
-                <div>
-                    <label
-                        htmlFor="email"
-                        className="mb-1 block text-sm font-medium text-black dark:text-zinc-50"
-                    >
-                        Email <span className="text-red-600">*</span>
-                    </label>
-
-                    <input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={form.email}
-                        onChange={handleChange}
-                        maxLength={255}
-                        required
-                        className="w-full rounded-md border border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                </div>
-
-                <div>
-                    <label
-                        htmlFor="password"
-                        className="mb-1 block text-sm font-medium text-black dark:text-zinc-50"
-                    >
-                        Lozinka <span className="text-red-600">*</span>
-                    </label>
-
-                    <input
-                        id="password"
-                        name="password"
-                        type="password"
-                        value={form.password}
-                        onChange={handleChange}
-                        minLength={8}
-                        required
-                        className="w-full rounded-md border border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                        Lozinka mora imati najmanje 8 karaktera.
-                    </p>
-                </div>
-
-                <div>
-                    <label
-                        htmlFor="confirmPassword"
-                        className="mb-1 block text-sm font-medium text-black dark:text-zinc-50"
-                    >
-                        Potvrdi lozinku{" "}
-                        <span className="text-red-600">*</span>
-                    </label>
-
-                    <input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        value={form.confirmPassword}
-                        onChange={handleChange}
-                        minLength={8}
-                        required
-                        className="w-full rounded-md border border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                </div>
-
-                <div>
-                    <label
-                        htmlFor="city"
-                        className="mb-1 block text-sm font-medium text-black dark:text-zinc-50"
-                    >
-                        Grad <span className="text-red-600">*</span>
-                    </label>
-
-                    <input
-                        id="city"
-                        name="city"
-                        type="text"
-                        value={form.city}
-                        onChange={handleChange}
-                        maxLength={100}
-                        required
-                        className="w-full rounded-md border border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                </div>
-
-                <div>
-                    <label
-                        htmlFor="dateOfBirth"
-                        className="mb-1 block text-sm font-medium text-black dark:text-zinc-50"
-                    >
-                        Datum rođenja{" "}
-                        <span className="text-red-600">*</span>
-                    </label>
-
-                    <input
-                        id="dateOfBirth"
-                        name="dateOfBirth"
-                        type="date"
-                        value={form.dateOfBirth}
-                        onChange={handleChange}
-                        required
-                        className="w-full rounded-md border border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="mt-2 rounded-full bg-black py-2 font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-green-100 px-6 py-12">
+            <div className="mx-auto flex w-full max-w-2xl flex-col">
+                <Link
+                    href="/"
+                    className="mb-8 text-center text-3xl font-extrabold tracking-tight text-green-900"
                 >
-                    {loading ? "Registrujem..." : "Registruj se"}
-                </button>
+                    BookYourSport
+                </Link>
 
-                <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-                    Već imaš nalog?{" "}
-                    <Link
-                        href="/login"
-                        className="font-medium text-black underline dark:text-white"
+                <div className="rounded-2xl border border-green-100 bg-white p-8 shadow-xl shadow-green-900/10 sm:p-10">
+                    <div className="mb-8 text-center">
+                        <div className="mb-4 text-4xl">🎾</div>
+
+                        <h1 className="text-3xl font-bold text-zinc-900">
+                            Kreiraj svoj nalog
+                        </h1>
+
+                        <p className="mt-2 text-sm text-zinc-500">
+                            Registruj se i pronađi svoj sledeći teniski teren.
+                        </p>
+                    </div>
+
+                    {error && (
+                        <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                            {error}
+                        </div>
+                    )}
+
+                    <form
+                        onSubmit={handleSubmit}
+                        className="flex flex-col gap-5"
                     >
-                        Prijavi se
-                    </Link>
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label
+                                    htmlFor="firstName"
+                                    className="mb-2 block text-sm font-semibold text-zinc-700"
+                                >
+                                    Ime
+                                    <span className="ml-1 text-red-500">*</span>
+                                </label>
+
+                                <input
+                                    id="firstName"
+                                    name="firstName"
+                                    type="text"
+                                    value={form.firstName}
+                                    onChange={handleChange}
+                                    maxLength={50}
+                                    required
+                                    placeholder="Unesi ime"
+                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="lastName"
+                                    className="mb-2 block text-sm font-semibold text-zinc-700"
+                                >
+                                    Prezime
+                                    <span className="ml-1 text-red-500">*</span>
+                                </label>
+
+                                <input
+                                    id="lastName"
+                                    name="lastName"
+                                    type="text"
+                                    value={form.lastName}
+                                    onChange={handleChange}
+                                    maxLength={50}
+                                    required
+                                    placeholder="Unesi prezime"
+                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                htmlFor="email"
+                                className="mb-2 block text-sm font-semibold text-zinc-700"
+                            >
+                                Email
+                                <span className="ml-1 text-red-500">*</span>
+                            </label>
+
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                value={form.email}
+                                onChange={handleChange}
+                                maxLength={255}
+                                required
+                                placeholder="Unesi svoj email"
+                                className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                            />
+                        </div>
+
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label
+                                    htmlFor="password"
+                                    className="mb-2 block text-sm font-semibold text-zinc-700"
+                                >
+                                    Lozinka
+                                    <span className="ml-1 text-red-500">*</span>
+                                </label>
+
+                                <input
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    value={form.password}
+                                    onChange={handleChange}
+                                    minLength={8}
+                                    required
+                                    placeholder="Najmanje 8 karaktera"
+                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                />
+
+                                <p className="mt-2 text-xs text-zinc-500">
+                                    Lozinka mora imati najmanje 8 karaktera.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="confirmPassword"
+                                    className="mb-2 block text-sm font-semibold text-zinc-700"
+                                >
+                                    Potvrdi lozinku
+                                    <span className="ml-1 text-red-500">*</span>
+                                </label>
+
+                                <input
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    type="password"
+                                    value={form.confirmPassword}
+                                    onChange={handleChange}
+                                    minLength={8}
+                                    required
+                                    placeholder="Ponovi lozinku"
+                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            <div>
+                                <label
+                                    htmlFor="city"
+                                    className="mb-2 block text-sm font-semibold text-zinc-700"
+                                >
+                                    Grad
+                                    <span className="ml-1 text-red-500">*</span>
+                                </label>
+
+                                <input
+                                    id="city"
+                                    name="city"
+                                    type="text"
+                                    value={form.city}
+                                    onChange={handleChange}
+                                    maxLength={100}
+                                    required
+                                    placeholder="Na primer, Beograd"
+                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    htmlFor="dateOfBirth"
+                                    className="mb-2 block text-sm font-semibold text-zinc-700"
+                                >
+                                    Datum rođenja
+                                    <span className="ml-1 text-red-500">*</span>
+                                </label>
+
+                                <input
+                                    id="dateOfBirth"
+                                    name="dateOfBirth"
+                                    type="date"
+                                    value={form.dateOfBirth}
+                                    onChange={handleChange}
+                                    required
+                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="mt-2 rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {loading ? "Registrujem..." : "Registruj se"}
+                        </button>
+                    </form>
+
+                    <p className="mt-7 text-center text-sm text-zinc-600">
+                        Već imaš nalog?{" "}
+                        <Link
+                            href="/login"
+                            className="font-semibold text-green-700 transition hover:text-green-900 hover:underline"
+                        >
+                            Prijavi se
+                        </Link>
+                    </p>
+                </div>
+
+                <p className="mt-8 pb-4 text-center text-sm text-zinc-500">
+                    © 2026 BookYourSport
                 </p>
-            </form>
-        </div>
+            </div>
+        </main>
     );
 }
