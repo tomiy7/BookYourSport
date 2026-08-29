@@ -1,4 +1,5 @@
-﻿using PaymentService.Application.Interfaces;
+﻿using PaymentService.Application.Common;
+using PaymentService.Application.Interfaces;
 using PaymentService.Domain.Contract;
 
 namespace PaymentService.Application.Commands.PaySubscription;
@@ -43,7 +44,15 @@ public class PaySubscriptionHandler
             throw new InvalidOperationException(
                 "Contract must be signed before subscription payment.");
         }
-
+        
+        var user = await _authServiceClient.GetUserAsync(command.UserId);
+        if (user == null)
+            throw new InvalidOperationException("User was not found.");
+        
+        if (user.ApprovalStatus != AuthApprovalStatus.Approved)
+            throw new InvalidOperationException(
+                "User must be approved by an admin before subscription payment.");
+        
         // Process the subscription payment only after all prerequisites are satisfied.
         var result = await _paymentProcessor.ProcessPaymentAsync(
             command.UserId,

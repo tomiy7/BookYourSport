@@ -23,7 +23,8 @@ public class GenerateContractHandlerTests
             {
                 Id = userId,
                 FirstName = "Test",
-                LastName = "ClubOwner"
+                LastName = "ClubOwner",
+                ApprovalStatus = "approved"
             }
         };
 
@@ -100,5 +101,52 @@ public class GenerateContractHandlerTests
 
         Assert.Null(contractRepository.AddedContract);
         Assert.False(contractRepository.SaveChangesCalled);
+    }
+
+    [Theory]
+    [InlineData("not_requested")]
+    [InlineData("requested")]
+    [InlineData("rejected")]
+    public async Task Handle_ShouldThrow_WhenUserIsNotApproved(string approvalStatus)
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+
+        var authServiceClient = new FakeAuthServiceClient
+        {
+            User = new AuthUserDto
+            {
+                Id = userId,
+                FirstName = "Test",
+                LastName = "ClubOwner",
+                ApprovalStatus = approvalStatus
+            }
+        };
+        
+        var pdfGenerator = new FakePdfContractGenerator();
+        
+        var contractRepository = new FakeContractRepository();
+        
+        var handler = new GenerateContractHandler(
+            pdfGenerator,
+            authServiceClient,
+            contractRepository);
+
+        var command = new GenerateContractCommand
+        {
+            UserId = userId
+        };
+        
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => handler.Handle(command));
+
+        Assert.Equal(
+            "User must be approved by an admin before a contract can be generated.",
+            exception.Message);
+        
+        Assert.Null(contractRepository.AddedContract);
+        Assert.False(contractRepository.SaveChangesCalled);
+        Assert.False(authServiceClient.ContractGeneratedNotificationSent);
     }
 }

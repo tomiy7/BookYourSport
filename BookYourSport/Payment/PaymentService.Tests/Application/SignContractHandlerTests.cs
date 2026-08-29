@@ -39,6 +39,7 @@ public class SignContractHandlerTests
 
         Assert.NotNull(result.SignedAt);
         Assert.True(contractRepository.SaveChangesCalled);
+        Assert.True(authServiceClient.ContractSignedNotificationSent);
     }
 
     // Testira ponašanje kada ugovor ne postoji.

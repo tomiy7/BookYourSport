@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PaymentService.API.Requests;
 using PaymentService.Application.Commands.TopUpCredit;
 
@@ -16,10 +18,15 @@ public class TopUpController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize]
     public async Task<IActionResult> TopUp([FromBody] TopUpCreditRequest request)
     {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdClaim, out var userId))
+            return Unauthorized();
+        
         var command = new TopUpCreditCommand(
-            request.UserId,
+            userId,
             request.Amount,
             request.Currency);
 
