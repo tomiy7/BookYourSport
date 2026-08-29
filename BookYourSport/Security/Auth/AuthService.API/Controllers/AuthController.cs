@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AuthService.API.DTOs;
 using AuthService.API.Entities;
 using AuthService.API.Repositories;
@@ -404,7 +405,8 @@ public class AuthController : ControllerBase
             user.Id,
             user.FirstName,
             user.LastName,
-            user.Email
+            user.Email,
+            user.ApprovalStatus
         });
     }
 
@@ -455,7 +457,7 @@ public class AuthController : ControllerBase
 
         user.ContractStatus = ContractStatuses.Signed;
 
-        TryApproveClubOwner(user);
+        TryAssignClubRole(user);
 
         await _userRepository.SaveChangesAsync();
 
@@ -489,7 +491,7 @@ public class AuthController : ControllerBase
 
         user.SubscriptionStatus = SubscriptionStatuses.Paid;
 
-        TryApproveClubOwner(user);
+        TryAssignClubRole(user);
 
         await _userRepository.SaveChangesAsync();
 
@@ -541,22 +543,56 @@ public class AuthController : ControllerBase
             message = "You have access to the admin endpoint."
         });
     }
+    
+    
+    // =========================
+    // CLUB OWNERSHIP REQUEST
+    // =========================
 
+    [HttpPost("request-club-ownership")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RequestClubOwnershipAsync()
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var user = await _userRepository.GetUserByIdAsync(userId);
+
+        if (user == null) return NotFound();
+
+        if (user.ApprovalStatus != ApprovalStatuses.NotRequested)
+        {
+            return BadRequest(new ErrorResponseDto
+            {
+                Error = "already_requested",
+                Message = "Club ownership has already been requested or processed."
+            });
+        }
+
+        user.ApprovalStatus = ApprovalStatuses.Requested;
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation("User {UserId} requested club ownership", user.Id);
+
+        return Ok(new { user.Id, user.ApprovalStatus });
+    }
+    
     // =========================
     // HELPERS
     // =========================
 
-    private static void TryApproveClubOwner(User user)
+    private static void TryAssignClubRole(User user)
     {
         var canBeApproved =
-            user.ApprovalStatus == ApprovalStatuses.Requested &&
+            user.ApprovalStatus == ApprovalStatuses.Approved &&
             user.ContractStatus == ContractStatuses.Signed &&
             user.SubscriptionStatus == SubscriptionStatuses.Paid;
 
         if (!canBeApproved)
             return;
-
-        user.ApprovalStatus = ApprovalStatuses.Approved;
+        
         user.Role = Roles.Club;
     }
 

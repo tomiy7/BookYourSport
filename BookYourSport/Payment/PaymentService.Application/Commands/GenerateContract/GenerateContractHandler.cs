@@ -1,4 +1,5 @@
-﻿using PaymentService.Application.Interfaces;
+﻿using PaymentService.Application.Common;
+using PaymentService.Application.Interfaces;
 using PaymentService.Domain.Contract;
 
 namespace PaymentService.Application.Commands.GenerateContract;
@@ -32,6 +33,12 @@ public class GenerateContractHandler
                 "User was not found.");
         }
 
+        if (user.ApprovalStatus != AuthApprovalStatus.Approved)
+        {
+            throw new InvalidOperationException(
+                "User must be approved by an admin before a contract can be generated.");
+        }
+        
         // Generate the contract document using the user's data.
         var documentPath =
             await _pdfContractGenerator.GenerateContractAsync(
