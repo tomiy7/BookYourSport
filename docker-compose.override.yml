@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     restart: always
     ports:
-      - "5434:5432"
+      - "5435:5432"
     volumes:
       - reservation_data:/var/lib/postgresql/data
     networks:

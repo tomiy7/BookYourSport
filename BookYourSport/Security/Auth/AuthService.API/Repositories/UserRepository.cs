@@ -18,6 +18,26 @@ public class UserRepository : IUserRepository
         return await _dbContext.Users
             .FirstOrDefaultAsync(x => x.Id == id);
     }
+    public async Task<List<User>> GetUsersAsync(string? search)
+    {
+        var query = _dbContext.Users.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.ToLower();
+
+            query = query.Where(x =>
+                x.FirstName.ToLower().Contains(search) ||
+                x.LastName.ToLower().Contains(search) ||
+                x.Email.ToLower().Contains(search));
+        }
+
+        return await query
+            .OrderBy(x => x.FirstName)
+            .ThenBy(x => x.LastName)
+            .ToListAsync();
+    }
+
 
     public async Task<User?> GetUserByEmailAsync(string email)
     {
@@ -34,6 +54,13 @@ public class UserRepository : IUserRepository
     public async Task AddUserAsync(User user)
     {
         await _dbContext.Users.AddAsync(user);
+    }
+    
+    public async Task<List<User>> GetUsersByApprovalStatusAsync(string approvalStatus)
+    {
+        return await _dbContext.Users
+            .Where(u => u.ApprovalStatus == approvalStatus)
+            .ToListAsync();
     }
 
     public async Task SaveChangesAsync()

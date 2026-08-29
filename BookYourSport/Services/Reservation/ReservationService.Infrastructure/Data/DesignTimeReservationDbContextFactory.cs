@@ -9,7 +9,7 @@ public class DesignTimeReservationDbContextFactory : IDesignTimeDbContextFactory
     {
         var optionsBuilder = new DbContextOptionsBuilder<ReservationDbContext>();
         optionsBuilder.UseNpgsql(
-            "Host=localhost;Port=5434;Database=reservationdb;Username=reservation_user;Password=changeme");
+            "Host=localhost;Port=5435;Database=reservationdb;Username=reservation_user;Password=micamica00");
         
         return new ReservationDbContext(optionsBuilder.Options);
     }
