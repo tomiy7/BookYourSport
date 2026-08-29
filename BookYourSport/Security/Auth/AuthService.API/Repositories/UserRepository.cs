@@ -48,6 +48,13 @@ public class UserRepository : IUserRepository
     public async Task AddUserAsync(User user) =>
         await _dbContext.Users.AddAsync(user);
 
+    public async Task<List<User>> GetUsersByApprovalStatusAsync(string approvalStatus)
+    {
+        return await _dbContext.Users
+            .Where(u => u.ApprovalStatus == approvalStatus)
+            .ToListAsync();
+    }
+
     public async Task SaveChangesAsync() =>
         await _dbContext.SaveChangesAsync();
 }

@@ -254,6 +254,24 @@ public class AuthController : ControllerBase
 
         return Ok(response);
     }
+    
+    [HttpGet("admin/pending-approvals")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPendingApprovalsAsync()
+    {
+        var users = await _userRepository.GetUsersByApprovalStatusAsync(ApprovalStatuses.Requested);
+
+        return Ok(users.Select(u => new
+        {
+            u.Id,
+            u.FirstName,
+            u.LastName,
+            u.Email,
+            u.City,
+            u.ApprovalStatus
+        }));
+    }
 
     // =========================
     // UPDATE APPROVAL STATUS
@@ -273,30 +291,20 @@ public class AuthController : ControllerBase
         Guid id,
         UpdateApprovalStatusRequestDto request)
     {
+        if (request.ApprovalStatus != ApprovalStatuses.Approved && request.ApprovalStatus != ApprovalStatuses.Rejected)
+        {
+            return BadRequest(new ErrorResponseDto
+            {
+                Error = "invalid_status",
+                Message = "Approval status can only be set to Approved or Rejected."
+            });
+        }
+        
         var user = await _userRepository.GetUserByIdAsync(id);
 
         if (user == null)
         {
             return NotFound();
-        }
-
-        var validStatuses = new[]
-        {
-            ApprovalStatuses.NotRequested,
-            ApprovalStatuses.Requested,
-            ApprovalStatuses.Approved,
-            ApprovalStatuses.Rejected
-        };
-
-        if (!validStatuses.Contains(request.ApprovalStatus))
-        {
-            return BadRequest(new ErrorResponseDto
-            {
-                Error = "invalid_approval_status",
-                Message =
-                    $"Invalid approval status. Allowed values are: " +
-                    $"{string.Join(", ", validStatuses)}."
-            });
         }
 
         var oldStatus = user.ApprovalStatus;
@@ -307,9 +315,7 @@ public class AuthController : ControllerBase
 
         _logger.LogInformation(
             "Approval status for user {UserId} changed from {OldStatus} to {NewStatus}",
-            user.Id,
-            oldStatus,
-            user.ApprovalStatus);
+            user.Id, oldStatus, user.ApprovalStatus);
 
         var response = new UserResponseDto
         {
