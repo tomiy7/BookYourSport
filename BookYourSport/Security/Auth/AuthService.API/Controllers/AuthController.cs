@@ -167,6 +167,28 @@ public class AuthController : ControllerBase
 
         return Ok(tokens);
     }
+    
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> LogoutAsync(RefreshRequestDto refreshRequestDto)
+    {
+        var storedToken = await _refreshTokenRepository.GetByTokenAsync(refreshRequestDto.RefreshToken);
+
+        if (storedToken != null)
+        {
+            storedToken.RevokedAt = DateTime.UtcNow;
+            await _refreshTokenRepository.SaveChangesAsync();
+            _logger.LogInformation("User logged out: {UserId}", storedToken.UserId);
+        }
+        else
+        {
+            _logger.LogWarning("Logout attempted with unknown or already-revoked refresh token");
+        }
+        
+        return Ok(new { message = "Successfuly logged out" });
+    }
 
     // =========================
     // ADMIN USER ENDPOINTS
