@@ -1,42 +1,18 @@
-import Image from "next/image";
 import Link from "next/link";
 import styles from "./page.module.css";
 import Footer from "./Footer";
+import Header from "./Header";
 
 export default function Home() {
   return (
       <main className={styles.page}>
-        <header className={styles.header}>
-          <Link href="/" className={styles.logo}>
-            <Image
-                src="/logo.png"
-                alt="BookYourSport"
-                width={130}
-                height={50}
-                className={styles.logoImage}
-                priority
-            />
-          </Link>
-
-          <nav className={styles.nav}>
-            <Link href="/login" className={styles.loginButton}>
-              Prijavi se
-            </Link>
-
-            <Link
-                href="/register"
-                className={styles.registerButton}
-            >
-              Registruj se
-            </Link>
-          </nav>
-        </header>
+        <Header />
 
         <section className={styles.hero}>
           <div className={styles.heroContent}>
-          <span className={styles.badge}>
-            Rezerviši svoj termin
-          </span>
+                    <span className={styles.badge}>
+                        Rezerviši svoj termin
+                    </span>
 
             <h1>
               Pronađi i rezerviši
@@ -75,7 +51,9 @@ export default function Home() {
 
           <div className={styles.cards}>
             <div className={styles.card}>
-              <div className={styles.cardIcon} />
+              <div className={styles.cardIcon}>
+                <span className={styles.iconCircleOne} />
+              </div>
 
               <h3>Pronađi klub</h3>
 
@@ -86,7 +64,9 @@ export default function Home() {
             </div>
 
             <div className={styles.card}>
-              <div className={styles.cardIcon} />
+              <div className={styles.cardIcon}>
+                <span className={styles.iconCircleTwo} />
+              </div>
 
               <h3>Izaberi termin</h3>
 
@@ -97,7 +77,9 @@ export default function Home() {
             </div>
 
             <div className={styles.card}>
-              <div className={styles.cardIcon} />
+              <div className={styles.cardIcon}>
+                <span className={styles.iconCircleThree} />
+              </div>
 
               <h3>Rezerviši</h3>
 

@@ -21,21 +21,29 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    function handleChange(
+        e: React.ChangeEvent<HTMLInputElement>
+    ) {
         setForm({
             ...form,
             [e.target.name]: e.target.value,
         });
     }
 
-    async function handleSubmit(e: React.FormEvent) {
+    async function handleSubmit(
+        e: React.FormEvent
+    ) {
         e.preventDefault();
 
         setError("");
         setLoading(true);
 
         try {
-            const res = await fetch(
+            // ==========================================
+            // LOGIN
+            // ==========================================
+
+            const loginResponse = await fetch(
                 `${process.env.NEXT_PUBLIC_AUTH_URL}/auth/login`,
                 {
                     method: "POST",
@@ -46,23 +54,97 @@ export default function LoginPage() {
                 }
             );
 
-            const data = await res.json();
+            const loginData =
+                await loginResponse.json();
 
-            if (!res.ok) {
+            if (!loginResponse.ok) {
                 setError(
-                    data.message || "Pogrešan email ili lozinka."
+                    loginData.message ||
+                    "Pogrešan email ili lozinka."
                 );
+
                 return;
             }
 
-            localStorage.setItem("accessToken", data.accessToken);
-            localStorage.setItem("refreshToken", data.refreshToken);
+            // ==========================================
+            // CUVANJE TOKENA
+            // ==========================================
 
-            window.dispatchEvent(new Event("auth-change"));
+            localStorage.setItem(
+                "accessToken",
+                loginData.accessToken
+            );
 
-            router.push("/player-dashboard");
-        } catch {
-            setError("Greška pri povezivanju sa serverom.");
+            localStorage.setItem(
+                "refreshToken",
+                loginData.refreshToken
+            );
+
+            // ==========================================
+            // DOHVATAMO STVARNOG USERA
+            // ==========================================
+
+            const userResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_AUTH_URL}/auth/me`,
+                {
+                    method: "GET",
+                    headers: {
+                        Authorization:
+                            `Bearer ${loginData.accessToken}`,
+                    },
+                }
+            );
+
+            if (!userResponse.ok) {
+                localStorage.removeItem(
+                    "accessToken"
+                );
+
+                localStorage.removeItem(
+                    "refreshToken"
+                );
+
+                throw new Error(
+                    "Nije moguće učitati podatke korisnika."
+                );
+            }
+
+            const userData =
+                await userResponse.json();
+
+            // ==========================================
+            // CUVANJE USERA
+            // ==========================================
+
+            localStorage.setItem(
+                "user",
+                JSON.stringify(userData)
+            );
+
+            localStorage.setItem(
+                "firstName",
+                userData.firstName
+            );
+
+            // Obaveštavamo Header.
+            window.dispatchEvent(
+                new Event("auth-change")
+            );
+
+            // ==========================================
+            // REDIRECT
+            // ==========================================
+
+            router.push(
+                "/player-dashboard"
+            );
+
+        } catch (error) {
+            console.error(error);
+
+            setError(
+                "Greška pri povezivanju sa serverom."
+            );
         } finally {
             setLoading(false);
         }
@@ -72,7 +154,6 @@ export default function LoginPage() {
         <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-green-100 px-6 py-8">
             <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center">
 
-                {/* LOGO */}
                 <Link
                     href="/"
                     className="mb-5 flex justify-center"
@@ -87,8 +168,8 @@ export default function LoginPage() {
                     />
                 </Link>
 
-                {/* LOGIN CARD */}
                 <div className="rounded-2xl border border-green-100 bg-white p-8 shadow-xl shadow-green-900/10">
+
                     <div className="mb-8 text-center">
                         <h1 className="text-3xl font-bold text-zinc-900">
                             Dobrodošao nazad
@@ -115,7 +196,10 @@ export default function LoginPage() {
                                 className="mb-2 block text-sm font-semibold text-zinc-700"
                             >
                                 Email
-                                <span className="ml-1 text-red-500">*</span>
+
+                                <span className="ml-1 text-red-500">
+                                    *
+                                </span>
                             </label>
 
                             <input
@@ -137,7 +221,10 @@ export default function LoginPage() {
                                 className="mb-2 block text-sm font-semibold text-zinc-700"
                             >
                                 Lozinka
-                                <span className="ml-1 text-red-500">*</span>
+
+                                <span className="ml-1 text-red-500">
+                                    *
+                                </span>
                             </label>
 
                             <input
@@ -157,12 +244,15 @@ export default function LoginPage() {
                             disabled={loading}
                             className="mt-2 rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            {loading ? "Prijavljivanje..." : "Prijavi se"}
+                            {loading
+                                ? "Prijavljivanje..."
+                                : "Prijavi se"}
                         </button>
                     </form>
 
                     <p className="mt-7 text-center text-sm text-zinc-600">
                         Nemaš nalog?{" "}
+
                         <Link
                             href="/register"
                             className="font-semibold text-green-700 transition hover:text-green-900 hover:underline"

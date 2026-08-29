@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AuthService.API.DTOs;
 using AuthService.API.Entities;
 using AuthService.API.Repositories;
@@ -32,12 +33,17 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(
+        typeof(AuthResponseDto),
+        StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(ErrorResponseDto),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RegisterAsync(
         RegisterRequestDto registerRequestDto)
     {
-        if (await _userRepository.EmailExistsAsync(registerRequestDto.Email))
+        if (await _userRepository.EmailExistsAsync(
+            registerRequestDto.Email))
         {
             _logger.LogWarning(
                 "Registration failed: email {Email} already exists",
@@ -78,7 +84,9 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(AuthResponseDto),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(
         typeof(ErrorResponseDto),
         StatusCodes.Status401Unauthorized)]
@@ -88,10 +96,13 @@ public class AuthController : ControllerBase
         var user = await _userRepository.GetUserByEmailAsync(
             loginRequestDto.Email);
 
-        if (user == null ||
+        if (
+            user == null ||
             !BCrypt.Net.BCrypt.Verify(
                 loginRequestDto.Password,
-                user.PasswordHash))
+                user.PasswordHash
+            )
+        )
         {
             _logger.LogWarning(
                 "Failed login attempt for email {Email}",
@@ -113,8 +124,132 @@ public class AuthController : ControllerBase
         return Ok(tokens);
     }
 
+    // ==================================================
+    // GET TRENUTNO ULOGOVANOG USERA
+    // ==================================================
+
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(
+        typeof(UserProfileDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCurrentUserAsync()
+    {
+        var userIdString = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized(new ErrorResponseDto
+            {
+                Error = "InvalidToken",
+                Message = "Invalid user identity in token."
+            });
+        }
+
+        var user = await _userRepository.GetUserByIdAsync(
+            userId);
+
+        if (user == null)
+        {
+            return NotFound(new ErrorResponseDto
+            {
+                Error = "UserNotFound",
+                Message = "User not found."
+            });
+        }
+
+        return Ok(new UserProfileDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            City = user.City,
+            DateOfBirth = user.DateOfBirth,
+            Role = user.Role
+        });
+    }
+
+    // ==================================================
+    // IZMENA PROFILA
+    // EMAIL I PASSWORD SE NAMERNO NE MENJAJU
+    // ==================================================
+
+    [HttpPut("me")]
+    [Authorize]
+    [ProducesResponseType(
+        typeof(UserProfileDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateCurrentUserAsync(
+        UpdateProfileRequestDto updateProfileRequestDto)
+    {
+        var userIdString = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (!Guid.TryParse(userIdString, out var userId))
+        {
+            return Unauthorized(new ErrorResponseDto
+            {
+                Error = "InvalidToken",
+                Message = "Invalid user identity in token."
+            });
+        }
+
+        var user = await _userRepository.GetUserByIdAsync(
+            userId);
+
+        if (user == null)
+        {
+            return NotFound(new ErrorResponseDto
+            {
+                Error = "UserNotFound",
+                Message = "User not found."
+            });
+        }
+
+        // Menjamo POSTOJECI entity.
+        // EF Core će uraditi UPDATE.
+        // Ne kreira se novi red u bazi.
+
+        user.FirstName =
+            updateProfileRequestDto.FirstName.Trim();
+
+        user.LastName =
+            updateProfileRequestDto.LastName.Trim();
+
+        user.City =
+            updateProfileRequestDto.City.Trim();
+
+        user.DateOfBirth =
+            updateProfileRequestDto.DateOfBirth;
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "User {UserId} successfully updated profile",
+            user.Id);
+
+        return Ok(new UserProfileDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            City = user.City,
+            DateOfBirth = user.DateOfBirth,
+            Role = user.Role
+        });
+    }
+
     [HttpPost("refresh")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(AuthResponseDto),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(
         typeof(ErrorResponseDto),
         StatusCodes.Status401Unauthorized)]
@@ -137,17 +272,15 @@ public class AuthController : ControllerBase
             });
         }
 
-        // Revoke the old refresh token so it cannot be reused.
         storedToken.RevokedAt = DateTime.UtcNow;
 
         _logger.LogInformation(
             "Refresh token used for user {UserId}",
             storedToken.UserId);
 
-        // Generate a new access token and refresh token.
-        var tokens = await IssueTokens(storedToken.User);
+        var tokens = await IssueTokens(
+            storedToken.User);
 
-        // Save the revocation of the old refresh token.
         await _refreshTokenRepository.SaveChangesAsync();
 
         return Ok(tokens);
@@ -159,7 +292,8 @@ public class AuthController : ControllerBase
     {
         return Ok(new
         {
-            message = "You have access to the player endpoint."
+            message =
+                "You have access to the player endpoint."
         });
     }
 
@@ -169,7 +303,8 @@ public class AuthController : ControllerBase
     {
         return Ok(new
         {
-            message = "You have access to the club endpoint."
+            message =
+                "You have access to the club endpoint."
         });
     }
 
@@ -179,36 +314,39 @@ public class AuthController : ControllerBase
     {
         return Ok(new
         {
-            message = "You have access to the admin endpoint."
+            message =
+                "You have access to the admin endpoint."
         });
     }
 
-    private async Task<AuthResponseDto> IssueTokens(User user)
+    private async Task<AuthResponseDto> IssueTokens(
+        User user)
     {
-        // Generate a new access token.
-        var accessToken = _tokenService.GenerateAccessToken(user);
+        var accessToken =
+            _tokenService.GenerateAccessToken(user);
 
-        // Generate a new refresh token.
-        var refreshTokenValue = _tokenService.GenerateRefreshToken();
+        var refreshTokenValue =
+            _tokenService.GenerateRefreshToken();
 
-        // Get the refresh token lifetime from configuration.
-        var refreshTokenDays = _config.GetValue<int>(
-            "Jwt:RefreshTokenDays",
-            60);
+        var refreshTokenDays =
+            _config.GetValue<int>(
+                "Jwt:RefreshTokenDays",
+                60);
 
-        // Create a refresh token entity for the database.
         var refreshToken = new RefreshToken
         {
             UserId = user.Id,
             Token = refreshTokenValue,
-            ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenDays)
+            ExpiresAt =
+                DateTime.UtcNow.AddDays(
+                    refreshTokenDays)
         };
 
-        // Save the refresh token to the database.
-        await _refreshTokenRepository.AddAsync(refreshToken);
+        await _refreshTokenRepository.AddAsync(
+            refreshToken);
+
         await _refreshTokenRepository.SaveChangesAsync();
 
-        // Return both tokens to the client.
         return new AuthResponseDto
         {
             AccessToken = accessToken,
