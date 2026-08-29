@@ -43,4 +43,22 @@ public class User
     [MaxLength(20)]
     [Column("role")]
     public string Role { get; set; } = Roles.Player;
+
+    [Required]
+    [MaxLength(30)]
+    [Column("approval_status")]
+    public string ApprovalStatus { get; set; } =
+        ApprovalStatuses.NotRequested;
+
+    [Required]
+    [MaxLength(30)]
+    [Column("contract_status")]
+    public string ContractStatus { get; set; } =
+        ContractStatuses.NotGenerated;
+
+    [Required]
+    [MaxLength(30)]
+    [Column("subscription_status")]
+    public string SubscriptionStatus { get; set; } =
+        SubscriptionStatuses.NotStarted;
 }

@@ -34,35 +34,29 @@ public class TokenService : ITokenService
 
         var claims = new[]
         {
-            // ID korisnika - koristimo ga da pronađemo trenutno
-            // ulogovanog korisnika iz JWT tokena
             new Claim(
                 ClaimTypes.NameIdentifier,
                 user.Id.ToString()
             ),
-
-            // Email se nalazi u tokenu, ali se neće menjati
-            // preko Edit Profile stranice
             new Claim(
                 ClaimTypes.Email,
                 user.Email
             ),
-
-            // Trenutni podaci korisnika
             new Claim(
                 ClaimTypes.GivenName,
                 user.FirstName
             ),
-
             new Claim(
                 ClaimTypes.Surname,
                 user.LastName
             ),
-
-            // Role korisnika
             new Claim(
                 ClaimTypes.Role,
                 user.Role
+            ),
+            new Claim(
+                "approval_status",
+                user.ApprovalStatus
             )
         };
 

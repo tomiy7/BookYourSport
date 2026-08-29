@@ -67,11 +67,23 @@ namespace AuthService.API.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("approval_status");
+
                     b.Property<string>("City")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("city");
+
+                    b.Property<string>("ContractStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("contract_status");
 
                     b.Property<DateOnly>("DateOfBirth")
                         .HasColumnType("date")
@@ -107,6 +119,12 @@ namespace AuthService.API.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("role");
 
+                    b.Property<string>("SubscriptionStatus")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("subscription_status");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -114,7 +132,13 @@ namespace AuthService.API.Migrations
 
                     b.ToTable("users", t =>
                         {
+                            t.HasCheckConstraint("CK_Users_ApprovalStatus", "approval_status IN ('not_requested', 'requested', 'approved', 'rejected')");
+
+                            t.HasCheckConstraint("CK_Users_ContractStatus", "contract_status IN ('not_generated', 'generated', 'signed')");
+
                             t.HasCheckConstraint("CK_Users_Role", "role IN ('player', 'club', 'admin')");
+
+                            t.HasCheckConstraint("CK_Users_SubscriptionStatus", "subscription_status IN ('not_started', 'pending', 'paid', 'failed')");
                         });
                 });
 
