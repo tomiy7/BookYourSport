@@ -3,20 +3,22 @@
     display: flex;
     flex-direction: column;
     background: #ffffff;
-    color: #1c1c1c;
+    color: #1f2933;
 }
+
 
 /* HEADER */
 
 .header {
-    height: 76px;
+    height: 72px;
     padding: 0 8%;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    background: #f4f8f5;
-    border-bottom: 1px solid #dfe8e2;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .logo {
@@ -29,117 +31,120 @@
     width: 100px;
     height: auto;
     display: block;
-    transform: translateY(5px);
 }
+
+
+/* NAVIGATION */
 
 .nav {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .loginButton {
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: 9px 16px;
 
     color: #14532d;
+
+    font-size: 14px;
     font-weight: 600;
     text-decoration: none;
 
-    transition: 0.2s;
+    border-radius: 6px;
 }
 
 .loginButton:hover {
-    background: #f0fdf4;
+    background: #f3f4f6;
 }
 
 .registerButton {
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: 9px 18px;
 
-    background: #15803d;
+    background: #166534;
     color: white;
 
+    font-size: 14px;
     font-weight: 600;
     text-decoration: none;
 
-    transition: 0.2s;
+    border-radius: 6px;
+
+    transition: background 0.2s ease;
 }
 
 .registerButton:hover {
-    background: #166534;
+    background: #14532d;
 }
+
 
 /* HERO */
 
 .hero {
-    padding: 110px 20px;
-    background:
-            linear-gradient(
-                    135deg,
-                    #ecfdf3 0%,
-                    #f7fff9 50%,
-                    #e7f8ed 100%
-            );
+    padding: 90px 20px 100px;
+
+    background: #f3f7f4;
 }
 
 .heroContent {
     max-width: 850px;
     margin: 0 auto;
+
     text-align: center;
 }
 
 .badge {
     display: inline-block;
 
-    margin-bottom: 22px;
-    padding: 8px 16px;
+    margin-bottom: 20px;
+    padding: 7px 14px;
 
-    border-radius: 999px;
-
-    background: #dcfce7;
+    background: #e5efe8;
     color: #166534;
 
-    font-size: 14px;
+    border-radius: 4px;
+
+    font-size: 13px;
     font-weight: 600;
 }
 
 .hero h1 {
-    margin-bottom: 22px;
+    margin: 0 0 20px;
 
-    font-size: clamp(42px, 6vw, 70px);
-    line-height: 1.05;
-    letter-spacing: -2px;
+    font-size: clamp(42px, 6vw, 66px);
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+
+    font-weight: 700;
 }
 
 .hero h1 span {
-    color: #15803d;
+    color: #166534;
 }
 
 .hero p {
-    max-width: 650px;
-    margin: 0 auto 35px;
+    max-width: 620px;
+    margin: 0 auto 32px;
 
-    color: #5f6368;
-    font-size: 19px;
-    line-height: 1.7;
+    color: #5f6770;
+
+    font-size: 18px;
+    line-height: 1.6;
 }
+
 
 /* SEARCH */
 
 .searchBox {
-    max-width: 700px;
+    max-width: 680px;
     margin: 0 auto;
 
     display: flex;
-    gap: 10px;
-
-    padding: 8px;
 
     background: white;
-    border-radius: 12px;
+    border: 1px solid #d9dfdb;
 
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
 }
 
 .searchBox input {
@@ -150,63 +155,85 @@
     border: none;
     outline: none;
 
-    font-size: 16px;
+    background: transparent;
+
+    font-size: 15px;
+    color: #1f2933;
+}
+
+.searchBox input::placeholder {
+    color: #8a929a;
 }
 
 .searchBox button {
-    padding: 0 28px;
+    margin: 6px;
+    padding: 0 26px;
 
     border: none;
-    border-radius: 8px;
+    border-radius: 5px;
 
-    background: #15803d;
+    background: #166534;
     color: white;
 
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
 
     cursor: pointer;
-    transition: 0.2s;
+
+    transition: background 0.2s ease;
 }
 
 .searchBox button:hover {
-    background: #166534;
+    background: #14532d;
 }
 
-/* TENNIS SECTION */
+
+/* COURTS SECTION */
 
 .courtsSection {
     flex: 1;
-    padding: 100px 8%;
+
+    padding: 85px 8%;
+
+    background: #ffffff;
 }
 
 .sectionHeading {
     max-width: 650px;
-    margin: 0 auto 55px;
+    margin: 0 auto 50px;
 
     text-align: center;
 }
 
 .sectionHeading span {
-    color: #15803d;
+    color: #166534;
 
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
 }
 
 .sectionHeading h2 {
-    margin: 12px 0 16px;
+    margin: 14px 0 14px;
 
-    font-size: 42px;
+    font-size: 40px;
+    line-height: 1.2;
     letter-spacing: -1px;
+
+    font-weight: 700;
 }
 
 .sectionHeading p {
-    color: #6b7280;
+    margin: 0;
+
+    color: #667085;
+
     font-size: 17px;
     line-height: 1.6;
 }
+
+
+/* CARDS */
 
 .cards {
     max-width: 1100px;
@@ -214,84 +241,63 @@
 
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+
+    gap: 22px;
 }
 
 .card {
-    padding: 35px;
+    padding: 32px;
 
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
+    background: #ffffff;
 
-    background: white;
+    border: 1px solid #e1e5e3;
+    border-radius: 8px;
 
-    transition: 0.2s;
+    transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
 }
 
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+    border-color: #b7c9bd;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
 }
 
-.cardIcon {
-    width: 52px;
-    height: 52px;
+.cardNumber {
+    width: 38px;
+    height: 38px;
 
-    margin-bottom: 22px;
+    margin-bottom: 24px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    border-radius: 12px;
+    background: #edf4ef;
+    color: #166534;
 
-    background: #dcfce7;
+    border-radius: 4px;
 
-    font-size: 24px;
+    font-size: 14px;
+    font-weight: 700;
 }
 
 .card h3 {
-    margin-bottom: 12px;
+    margin: 0 0 12px;
 
     font-size: 21px;
+    font-weight: 600;
 }
 
 .card p {
-    color: #6b7280;
+    margin: 0;
+
+    color: #667085;
+
+    font-size: 16px;
     line-height: 1.6;
 }
 
-/* FOOTER */
-
-.footer {
-    padding: 28px 8%;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    background: #14532d;
-    color: #dcfce7;
-}
-
-.footer p {
-    font-size: 14px;
-}
-
-.footerLinks {
-    display: flex;
-    gap: 24px;
-}
-
-.footerLinks a {
-    color: #dcfce7;
-    font-size: 14px;
-    text-decoration: none;
-}
-
-.footerLinks a:hover {
-    color: white;
-}
 
 /* MOBILE */
 
@@ -301,7 +307,7 @@
     }
 
     .logoImage {
-        width: 115px;
+        width: 100px;
         height: auto;
     }
 
@@ -311,39 +317,50 @@
 
     .loginButton,
     .registerButton {
-        padding: 8px 12px;
-        font-size: 14px;
+        padding: 8px 11px;
+
+        font-size: 13px;
     }
 
     .hero {
-        padding: 80px 20px;
+        padding: 70px 20px 80px;
+    }
+
+    .hero h1 {
+        font-size: 42px;
+    }
+
+    .hero p {
+        font-size: 16px;
     }
 
     .searchBox {
         flex-direction: column;
+
+        padding: 6px;
+    }
+
+    .searchBox input {
+        width: 100%;
     }
 
     .searchBox button {
-        height: 52px;
+        height: 46px;
     }
 
     .courtsSection {
-        padding: 70px 20px;
+        padding: 65px 20px;
+    }
+
+    .sectionHeading h2 {
+        font-size: 34px;
     }
 
     .cards {
         grid-template-columns: 1fr;
     }
 
-    .footer {
-        flex-direction: column;
-        gap: 18px;
-
-        text-align: center;
-    }
-
-    .footerLinks {
-        flex-wrap: wrap;
-        justify-content: center;
+    .card {
+        padding: 28px;
     }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -59,7 +60,7 @@ export default function LoginPage() {
 
             window.dispatchEvent(new Event("auth-change"));
 
-            router.push("/");
+            router.push("/player-dashboard");
         } catch {
             setError("Greška pri povezivanju sa serverom.");
         } finally {
@@ -68,21 +69,29 @@ export default function LoginPage() {
     }
 
     return (
-        <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-green-100 px-6 py-12">
-            <div className="mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-md flex-col justify-center">
+        <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-green-100 px-6 py-8">
+            <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center">
+
+                {/* LOGO */}
                 <Link
                     href="/"
-                    className="mb-8 text-center text-3xl font-extrabold tracking-tight text-green-900"
+                    className="mb-5 flex justify-center"
                 >
-                    BookYourSport
+                    <Image
+                        src="/logo.png"
+                        alt="BookYourSport"
+                        width={180}
+                        height={100}
+                        priority
+                        className="h-auto w-[180px] object-contain"
+                    />
                 </Link>
 
+                {/* LOGIN CARD */}
                 <div className="rounded-2xl border border-green-100 bg-white p-8 shadow-xl shadow-green-900/10">
                     <div className="mb-8 text-center">
-                        <div className="mb-4 text-4xl">🎾</div>
-
                         <h1 className="text-3xl font-bold text-zinc-900">
-                            Dobro došao nazad
+                            Dobrodošao nazad
                         </h1>
 
                         <p className="mt-2 text-sm text-zinc-500">
@@ -163,7 +172,7 @@ export default function LoginPage() {
                     </p>
                 </div>
 
-                <p className="mt-8 text-center text-sm text-zinc-500">
+                <p className="mt-6 text-center text-sm text-zinc-500">
                     © 2026 BookYourSport
                 </p>
             </div>

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import styles from "./page.module.css";
+import Footer from "./Footer";
 
 export default function Home() {
   return (
@@ -22,7 +23,10 @@ export default function Home() {
               Prijavi se
             </Link>
 
-            <Link href="/register" className={styles.registerButton}>
+            <Link
+                href="/register"
+                className={styles.registerButton}
+            >
               Registruj se
             </Link>
           </nav>
@@ -30,7 +34,9 @@ export default function Home() {
 
         <section className={styles.hero}>
           <div className={styles.heroContent}>
-            <span className={styles.badge}>🎾 Rezerviši svoj termin</span>
+          <span className={styles.badge}>
+            Rezerviši svoj termin
+          </span>
 
             <h1>
               Pronađi i rezerviši
@@ -38,8 +44,8 @@ export default function Home() {
             </h1>
 
             <p>
-              Istraži teniske klubove, pronađi slobodne terene i rezerviši svoj
-              sledeći termin brzo i jednostavno.
+              Istraži teniske klubove, pronađi slobodne terene i
+              rezerviši svoj sledeći termin brzo i jednostavno.
             </p>
 
             <div className={styles.searchBox}>
@@ -48,7 +54,9 @@ export default function Home() {
                   placeholder="Pretraži po klubu ili lokaciji..."
               />
 
-              <button>Pretraži</button>
+              <button type="button">
+                Pretraži
+              </button>
             </div>
           </div>
         </section>
@@ -60,54 +68,48 @@ export default function Home() {
             <h2>Tenis počinje ovde</h2>
 
             <p>
-              Izaberi klub i pronađi idealan teren za svoj sledeći meč.
+              Izaberi klub i pronađi idealan teren za svoj sledeći
+              meč.
             </p>
           </div>
 
           <div className={styles.cards}>
             <div className={styles.card}>
-              <div className={styles.cardIcon}>🎾</div>
+              <div className={styles.cardIcon} />
 
               <h3>Pronađi klub</h3>
 
               <p>
-                Pretraži teniske klubove i pronađi lokaciju koja ti najviše
-                odgovara.
+                Pretraži teniske klubove i pronađi lokaciju koja ti
+                najviše odgovara.
               </p>
             </div>
 
             <div className={styles.card}>
-              <div className={styles.cardIcon}>📅</div>
+              <div className={styles.cardIcon} />
 
               <h3>Izaberi termin</h3>
 
               <p>
-                Pogledaj dostupne terene i odaberi datum i vreme koje ti
-                odgovara.
+                Pogledaj dostupne terene i odaberi datum i vreme
+                koje ti odgovara.
               </p>
             </div>
 
             <div className={styles.card}>
-              <div className={styles.cardIcon}>✓</div>
+              <div className={styles.cardIcon} />
 
               <h3>Rezerviši</h3>
 
               <p>
-                Potvrdi rezervaciju i spreman si za svoj sledeći teniski meč.
+                Potvrdi rezervaciju i spreman si za svoj sledeći
+                teniski meč.
               </p>
             </div>
           </div>
         </section>
 
-        <footer className={styles.footer}>
-          <p>© 2026 BookYourSport. Sva prava zadržana.</p>
-
-          <div className={styles.footerLinks}>
-            <a href="#">O nama</a>
-            <a href="#">Kontakt</a>
-            <a href="#">Uslovi korišćenja</a>
-          </div>
-        </footer>
+        <Footer />
       </main>
   );
 }

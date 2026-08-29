@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 type RegisterForm = {
     firstName: string;
@@ -43,7 +44,12 @@ export default function RegisterPage() {
         setError("");
 
         if (form.password !== form.confirmPassword) {
-            setError("Lozinke se ne poklapaju.");
+            setError("Lozinke se ne podudaraju.");
+            return;
+        }
+
+        if (form.password.length < 8) {
+            setError("Lozinka mora imati najmanje 8 karaktera.");
             return;
         }
 
@@ -72,7 +78,8 @@ export default function RegisterPage() {
 
             if (!res.ok) {
                 setError(
-                    data.message || "Registracija nije uspela."
+                    data.message ||
+                    "Došlo je do greške prilikom registracije."
                 );
                 return;
             }
@@ -82,7 +89,7 @@ export default function RegisterPage() {
 
             window.dispatchEvent(new Event("auth-change"));
 
-            router.push("/");
+            router.push("/player-dashboard");
         } catch {
             setError("Greška pri povezivanju sa serverom.");
         } finally {
@@ -92,18 +99,26 @@ export default function RegisterPage() {
 
     return (
         <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-green-100 px-6 py-12">
-            <div className="mx-auto flex w-full max-w-2xl flex-col">
+            <div className="mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-lg flex-col justify-center">
+
+                {/* LOGO */}
                 <Link
                     href="/"
-                    className="mb-8 text-center text-3xl font-extrabold tracking-tight text-green-900"
+                    className="mb-8 flex justify-center"
                 >
-                    BookYourSport
+                    <Image
+                        src="/logo.png"
+                        alt="BookYourSport"
+                        width={170}
+                        height={65}
+                        priority
+                        className="h-auto w-[150px] object-contain"
+                    />
                 </Link>
 
-                <div className="rounded-2xl border border-green-100 bg-white p-8 shadow-xl shadow-green-900/10 sm:p-10">
+                {/* REGISTER CARD */}
+                <div className="rounded-2xl border border-green-100 bg-white p-8 shadow-xl shadow-green-900/10">
                     <div className="mb-8 text-center">
-                        <div className="mb-4 text-4xl">🎾</div>
-
                         <h1 className="text-3xl font-bold text-zinc-900">
                             Kreiraj svoj nalog
                         </h1>
@@ -123,14 +138,17 @@ export default function RegisterPage() {
                         onSubmit={handleSubmit}
                         className="flex flex-col gap-5"
                     >
-                        <div className="grid gap-5 sm:grid-cols-2">
+                        {/* IME I PREZIME */}
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                             <div>
                                 <label
                                     htmlFor="firstName"
                                     className="mb-2 block text-sm font-semibold text-zinc-700"
                                 >
                                     Ime
-                                    <span className="ml-1 text-red-500">*</span>
+                                    <span className="ml-1 text-red-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
@@ -139,10 +157,10 @@ export default function RegisterPage() {
                                     type="text"
                                     value={form.firstName}
                                     onChange={handleChange}
-                                    maxLength={50}
                                     required
+                                    maxLength={100}
                                     placeholder="Unesi ime"
-                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                                 />
                             </div>
 
@@ -152,7 +170,9 @@ export default function RegisterPage() {
                                     className="mb-2 block text-sm font-semibold text-zinc-700"
                                 >
                                     Prezime
-                                    <span className="ml-1 text-red-500">*</span>
+                                    <span className="ml-1 text-red-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
@@ -161,21 +181,24 @@ export default function RegisterPage() {
                                     type="text"
                                     value={form.lastName}
                                     onChange={handleChange}
-                                    maxLength={50}
                                     required
+                                    maxLength={100}
                                     placeholder="Unesi prezime"
-                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                                 />
                             </div>
                         </div>
 
+                        {/* EMAIL */}
                         <div>
                             <label
                                 htmlFor="email"
                                 className="mb-2 block text-sm font-semibold text-zinc-700"
                             >
                                 Email
-                                <span className="ml-1 text-red-500">*</span>
+                                <span className="ml-1 text-red-500">
+                                    *
+                                </span>
                             </label>
 
                             <input
@@ -184,21 +207,24 @@ export default function RegisterPage() {
                                 type="email"
                                 value={form.email}
                                 onChange={handleChange}
-                                maxLength={255}
                                 required
+                                maxLength={255}
                                 placeholder="Unesi svoj email"
-                                className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                             />
                         </div>
 
-                        <div className="grid gap-5 sm:grid-cols-2">
+                        {/* LOZINKE */}
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                             <div>
                                 <label
                                     htmlFor="password"
                                     className="mb-2 block text-sm font-semibold text-zinc-700"
                                 >
                                     Lozinka
-                                    <span className="ml-1 text-red-500">*</span>
+                                    <span className="ml-1 text-red-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
@@ -207,10 +233,10 @@ export default function RegisterPage() {
                                     type="password"
                                     value={form.password}
                                     onChange={handleChange}
-                                    minLength={8}
                                     required
-                                    placeholder="Najmanje 8 karaktera"
-                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    minLength={8}
+                                    placeholder="Unesi lozinku"
+                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                                 />
 
                                 <p className="mt-2 text-xs text-zinc-500">
@@ -224,7 +250,9 @@ export default function RegisterPage() {
                                     className="mb-2 block text-sm font-semibold text-zinc-700"
                                 >
                                     Potvrdi lozinku
-                                    <span className="ml-1 text-red-500">*</span>
+                                    <span className="ml-1 text-red-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
@@ -233,22 +261,24 @@ export default function RegisterPage() {
                                     type="password"
                                     value={form.confirmPassword}
                                     onChange={handleChange}
-                                    minLength={8}
                                     required
                                     placeholder="Ponovi lozinku"
-                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                                 />
                             </div>
                         </div>
 
-                        <div className="grid gap-5 sm:grid-cols-2">
+                        {/* GRAD I DATUM RODJENJA */}
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                             <div>
                                 <label
                                     htmlFor="city"
                                     className="mb-2 block text-sm font-semibold text-zinc-700"
                                 >
                                     Grad
-                                    <span className="ml-1 text-red-500">*</span>
+                                    <span className="ml-1 text-red-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
@@ -257,10 +287,10 @@ export default function RegisterPage() {
                                     type="text"
                                     value={form.city}
                                     onChange={handleChange}
-                                    maxLength={100}
                                     required
-                                    placeholder="Na primer, Beograd"
-                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    maxLength={100}
+                                    placeholder="Unesi grad"
+                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                                 />
                             </div>
 
@@ -270,7 +300,9 @@ export default function RegisterPage() {
                                     className="mb-2 block text-sm font-semibold text-zinc-700"
                                 >
                                     Datum rođenja
-                                    <span className="ml-1 text-red-500">*</span>
+                                    <span className="ml-1 text-red-500">
+                                        *
+                                    </span>
                                 </label>
 
                                 <input
@@ -280,17 +312,20 @@ export default function RegisterPage() {
                                     value={form.dateOfBirth}
                                     onChange={handleChange}
                                     required
-                                    className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                                 />
                             </div>
                         </div>
 
+                        {/* SUBMIT */}
                         <button
                             type="submit"
                             disabled={loading}
                             className="mt-2 rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            {loading ? "Registrujem..." : "Registruj se"}
+                            {loading
+                                ? "Registrovanje..."
+                                : "Registruj se"}
                         </button>
                     </form>
 
@@ -305,7 +340,7 @@ export default function RegisterPage() {
                     </p>
                 </div>
 
-                <p className="mt-8 pb-4 text-center text-sm text-zinc-500">
+                <p className="mt-8 text-center text-sm text-zinc-500">
                     © 2026 BookYourSport
                 </p>
             </div>
