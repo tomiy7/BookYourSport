@@ -40,6 +40,10 @@ public class SignContractHandler
 
         // Persist the updated contract after it has been signed.
         await _contractRepository.SaveChangesAsync();
+        
+        await _authServiceClient.NotifyContractSignedAsync(
+            contract.UserId,
+            contract.Id);
 
         return contract;
     }

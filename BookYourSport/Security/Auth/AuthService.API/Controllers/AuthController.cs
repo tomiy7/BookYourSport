@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AuthService.API.DTOs;
 using AuthService.API.Entities;
 using AuthService.API.Repositories;
@@ -31,13 +32,22 @@ public class AuthController : ControllerBase
         _tokenService = tokenService;
     }
 
+    // =========================
+    // AUTH ENDPOINTS
+    // =========================
+
     [HttpPost("register")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(
+        typeof(AuthResponseDto),
+        StatusCodes.Status201Created)]
+    [ProducesResponseType(
+        typeof(ErrorResponseDto),
+        StatusCodes.Status409Conflict)]
     public async Task<IActionResult> RegisterAsync(
         RegisterRequestDto registerRequestDto)
     {
-        if (await _userRepository.EmailExistsAsync(registerRequestDto.Email))
+        if (await _userRepository.EmailExistsAsync(
+                registerRequestDto.Email))
         {
             _logger.LogWarning(
                 "Registration failed: email {Email} already exists",
@@ -59,7 +69,11 @@ public class AuthController : ControllerBase
                 registerRequestDto.Password),
             City = registerRequestDto.City,
             DateOfBirth = registerRequestDto.DateOfBirth,
-            Role = Roles.Player
+            Role = Roles.Player,
+
+            ApprovalStatus = ApprovalStatuses.NotRequested,
+            ContractStatus = ContractStatuses.NotGenerated,
+            SubscriptionStatus = SubscriptionStatuses.NotStarted
         };
 
         await _userRepository.AddUserAsync(user);
@@ -77,113 +91,10 @@ public class AuthController : ControllerBase
             tokens);
     }
 
-    [HttpPost("register/club")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> RegisterClubOwnerAsync(
-    ClubOwnerRegisterRequestDto registerRequestDto)
-    {
-        if (await _userRepository.EmailExistsAsync(registerRequestDto.Email))
-        {
-            _logger.LogWarning(
-                "Club owner registration failed: email {Email} already exists",
-                registerRequestDto.Email);
-
-            return Conflict(new ErrorResponseDto
-            {
-                Error = AuthErrorCodes.EmailExists,
-                Message = "Email already exists"
-            });
-        }
-
-        var user = new User
-        {
-            FirstName = registerRequestDto.FirstName,
-            LastName = registerRequestDto.LastName,
-            Email = registerRequestDto.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(
-                registerRequestDto.Password),
-            City = registerRequestDto.City,
-            DateOfBirth = registerRequestDto.DateOfBirth,
-            Role = Roles.Club,
-            Status = UserStatus.Pending
-        };
-
-        await _userRepository.AddUserAsync(user);
-        await _userRepository.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Club owner {Email} registered with pending status. Id: {UserId}",
-            user.Email,
-            user.Id);
-
-        var tokens = await IssueTokens(user);
-
-        return StatusCode(
-            StatusCodes.Status201Created,
-            tokens);
-    }
-
-    [HttpGet("users/{userId:guid}")]
-    public async Task<IActionResult> GetUserAsync(Guid userId)
-    {
-        var user = await _userRepository.GetUserByIdAsync(userId);
-
-        if (user == null)
-        {
-            return NotFound();
-        }
-
-        return Ok(new UserDetailsResponseDto
-        {
-            Id = user.Id,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            City = user.City,
-            DateOfBirth = user.DateOfBirth,
-            Role = user.Role,
-            Status = user.Status
-        });
-    }
-    [HttpPost("subscription-paid")]
-    public async Task<IActionResult> SubscriptionPaidAsync(
-    SubscriptionPaidRequestDto request)
-    {
-        var user = await _userRepository.GetUserByIdAsync(request.UserId);
-
-        if (user == null)
-        {
-            return NotFound();
-        }
-
-        if (user.Role != Roles.Club)
-        {
-            return BadRequest("User is not a club owner.");
-        }
-
-        if (user.Status != UserStatus.Pending)
-        {
-            return BadRequest("Club owner is not pending.");
-        }
-
-        user.Status = UserStatus.Approved;
-
-        await _userRepository.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Club owner {UserId} approved after successful subscription payment. " +
-            "PaymentId: {PaymentId}, ContractId: {ContractId}",
-            user.Id,
-            request.PaymentId,
-            request.ContractId);
-
-        return Ok();
-    }
-
-
     [HttpPost("login")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(AuthResponseDto),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(
         typeof(ErrorResponseDto),
         StatusCodes.Status401Unauthorized)]
@@ -219,7 +130,9 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
-    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(AuthResponseDto),
+        StatusCodes.Status200OK)]
     [ProducesResponseType(
         typeof(ErrorResponseDto),
         StatusCodes.Status401Unauthorized)]
@@ -242,21 +155,392 @@ public class AuthController : ControllerBase
             });
         }
 
-        // Revoke the old refresh token so it cannot be reused.
         storedToken.RevokedAt = DateTime.UtcNow;
 
         _logger.LogInformation(
             "Refresh token used for user {UserId}",
             storedToken.UserId);
 
-        // Generate a new access token and refresh token.
         var tokens = await IssueTokens(storedToken.User);
 
-        // Save the revocation of the old refresh token.
         await _refreshTokenRepository.SaveChangesAsync();
 
         return Ok(tokens);
     }
+    
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> LogoutAsync(RefreshRequestDto refreshRequestDto)
+    {
+        var storedToken = await _refreshTokenRepository.GetByTokenAsync(refreshRequestDto.RefreshToken);
+
+        if (storedToken != null)
+        {
+            storedToken.RevokedAt = DateTime.UtcNow;
+            await _refreshTokenRepository.SaveChangesAsync();
+            _logger.LogInformation("User logged out: {UserId}", storedToken.UserId);
+        }
+        else
+        {
+            _logger.LogWarning("Logout attempted with unknown or already-revoked refresh token");
+        }
+        
+        return Ok(new { message = "Successfuly logged out" });
+    }
+
+    // =========================
+    // ADMIN USER ENDPOINTS
+    // =========================
+
+    [HttpGet("users")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(
+        typeof(IEnumerable<UserResponseDto>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetUsersAsync(
+        [FromQuery] string? search)
+    {
+        var users = await _userRepository.GetUsersAsync(search);
+
+        var response = users.Select(user => new UserResponseDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            City = user.City,
+            DateOfBirth = user.DateOfBirth,
+            Role = user.Role,
+            ApprovalStatus = user.ApprovalStatus,
+            ContractStatus = user.ContractStatus,
+            SubscriptionStatus = user.SubscriptionStatus
+        });
+
+        return Ok(response);
+    }
+
+    [HttpGet("users/{id:guid}")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(
+        typeof(UserResponseDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserByIdAsync(Guid id)
+    {
+        var user = await _userRepository.GetUserByIdAsync(id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var response = new UserResponseDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            City = user.City,
+            DateOfBirth = user.DateOfBirth,
+            Role = user.Role,
+            ApprovalStatus = user.ApprovalStatus,
+            ContractStatus = user.ContractStatus,
+            SubscriptionStatus = user.SubscriptionStatus
+        };
+
+        return Ok(response);
+    }
+    
+    [HttpGet("admin/pending-approvals")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPendingApprovalsAsync()
+    {
+        var users = await _userRepository.GetUsersByApprovalStatusAsync(ApprovalStatuses.Requested);
+
+        return Ok(users.Select(u => new
+        {
+            u.Id,
+            u.FirstName,
+            u.LastName,
+            u.Email,
+            u.City,
+            u.ApprovalStatus
+        }));
+    }
+
+    // =========================
+    // UPDATE APPROVAL STATUS
+    // =========================
+
+    [HttpPatch("users/{id:guid}/approval-status")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(
+        typeof(UserResponseDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ErrorResponseDto),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateApprovalStatusAsync(
+        Guid id,
+        UpdateApprovalStatusRequestDto request)
+    {
+        if (request.ApprovalStatus != ApprovalStatuses.Approved && request.ApprovalStatus != ApprovalStatuses.Rejected)
+        {
+            return BadRequest(new ErrorResponseDto
+            {
+                Error = "invalid_status",
+                Message = "Approval status can only be set to Approved or Rejected."
+            });
+        }
+        
+        var user = await _userRepository.GetUserByIdAsync(id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var oldStatus = user.ApprovalStatus;
+
+        user.ApprovalStatus = request.ApprovalStatus;
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Approval status for user {UserId} changed from {OldStatus} to {NewStatus}",
+            user.Id, oldStatus, user.ApprovalStatus);
+
+        var response = new UserResponseDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            City = user.City,
+            DateOfBirth = user.DateOfBirth,
+            Role = user.Role,
+            ApprovalStatus = user.ApprovalStatus,
+            ContractStatus = user.ContractStatus,
+            SubscriptionStatus = user.SubscriptionStatus
+        };
+
+        return Ok(response);
+    }
+
+    // =========================
+    // UPDATE USER ROLE
+    // =========================
+
+    [HttpPatch("users/{id:guid}/role")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(
+        typeof(UserResponseDto),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(ErrorResponseDto),
+        StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateUserRoleAsync(
+        Guid id,
+        UpdateUserRoleRequestDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var validRoles = new[]
+        {
+            Roles.Player,
+            Roles.Club,
+            Roles.Admin
+        };
+
+        if (!validRoles.Contains(request.Role))
+        {
+            return BadRequest(new ErrorResponseDto
+            {
+                Error = "invalid_role",
+                Message =
+                    $"Invalid role. Allowed values are: " +
+                    $"{string.Join(", ", validRoles)}."
+            });
+        }
+
+        if (request.Role == Roles.Club &&
+            user.ApprovalStatus != ApprovalStatuses.Approved)
+        {
+            return BadRequest(new ErrorResponseDto
+            {
+                Error = "club_role_requires_approval",
+                Message =
+                    "User must be approved before being assigned the club role."
+            });
+        }
+
+        var oldRole = user.Role;
+
+        user.Role = request.Role;
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Role for user {UserId} changed from {OldRole} to {NewRole}",
+            user.Id,
+            oldRole,
+            user.Role);
+
+        var response = new UserResponseDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email,
+            City = user.City,
+            DateOfBirth = user.DateOfBirth,
+            Role = user.Role,
+            ApprovalStatus = user.ApprovalStatus,
+            ContractStatus = user.ContractStatus,
+            SubscriptionStatus = user.SubscriptionStatus
+        };
+
+        return Ok(response);
+    }
+
+    // =========================
+    // PAYMENT / CONTRACT NOTIFICATIONS
+    // =========================
+    
+    [HttpGet("internal/users/{id:guid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetUserInternalAsync(Guid id)
+    {
+        var user = await _userRepository.GetUserByIdAsync(id);
+        if (user == null) return NotFound();
+
+        return Ok(new
+        {
+            user.Id,
+            user.FirstName,
+            user.LastName,
+            user.Email,
+            user.ApprovalStatus
+        });
+    }
+
+    [HttpPost("contract-generated")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ContractGeneratedAsync(
+        ContractGeneratedNotificationDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(
+            request.UserId);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        user.ContractStatus = ContractStatuses.Generated;
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Contract {ContractId} generated for user {UserId}",
+            request.ContractId,
+            user.Id);
+
+        return Ok(new
+        {
+            user.Id,
+            user.Role,
+            user.ApprovalStatus,
+            user.ContractStatus,
+            user.SubscriptionStatus
+        });
+    }
+
+    [HttpPost("contract-signed")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ContractSignedAsync(
+        ContractSignedNotificationDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(
+            request.UserId);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        user.ContractStatus = ContractStatuses.Signed;
+
+        TryAssignClubRole(user);
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Contract {ContractId} signed for user {UserId}",
+            request.ContractId,
+            user.Id);
+
+        return Ok(new
+        {
+            user.Id,
+            user.Role,
+            user.ApprovalStatus,
+            user.ContractStatus,
+            user.SubscriptionStatus
+        });
+    }
+
+    [HttpPost("subscription-paid")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SubscriptionPaidAsync(
+        SubscriptionPaidNotificationDto request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(
+            request.UserId);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        user.SubscriptionStatus = SubscriptionStatuses.Paid;
+
+        TryAssignClubRole(user);
+
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Subscription payment {PaymentId} successful for user {UserId}",
+            request.PaymentId,
+            user.Id);
+
+        return Ok(new
+        {
+            user.Id,
+            user.Role,
+            user.ApprovalStatus,
+            user.ContractStatus,
+            user.SubscriptionStatus
+        });
+    }
+
+    // =========================
+    // ROLE TEST ENDPOINTS
+    // =========================
 
     [HttpGet("test/player")]
     [Authorize(Roles = Roles.Player)]
@@ -287,38 +571,89 @@ public class AuthController : ControllerBase
             message = "You have access to the admin endpoint."
         });
     }
+    
+    
+    // =========================
+    // CLUB OWNERSHIP REQUEST
+    // =========================
+
+    [HttpPost("request-club-ownership")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RequestClubOwnershipAsync()
+    {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var user = await _userRepository.GetUserByIdAsync(userId);
+
+        if (user == null) return NotFound();
+
+        if (user.ApprovalStatus != ApprovalStatuses.NotRequested)
+        {
+            return BadRequest(new ErrorResponseDto
+            {
+                Error = "already_requested",
+                Message = "Club ownership has already been requested or processed."
+            });
+        }
+
+        user.ApprovalStatus = ApprovalStatuses.Requested;
+        await _userRepository.SaveChangesAsync();
+
+        _logger.LogInformation("User {UserId} requested club ownership", user.Id);
+
+        return Ok(new { user.Id, user.ApprovalStatus });
+    }
+    
+    // =========================
+    // HELPERS
+    // =========================
+
+    private static void TryAssignClubRole(User user)
+    {
+        var canBeApproved =
+            user.ApprovalStatus == ApprovalStatuses.Approved &&
+            user.ContractStatus == ContractStatuses.Signed &&
+            user.SubscriptionStatus == SubscriptionStatuses.Paid;
+
+        if (!canBeApproved)
+            return;
+        
+        user.Role = Roles.Club;
+    }
+
+    // =========================
+    // TOKEN GENERATION
+    // =========================
 
     private async Task<AuthResponseDto> IssueTokens(User user)
     {
-        // Generate a new access token.
         var accessToken = _tokenService.GenerateAccessToken(user);
 
-        // Generate a new refresh token.
-        var refreshTokenValue = _tokenService.GenerateRefreshToken();
+        var refreshTokenValue =
+            _tokenService.GenerateRefreshToken();
 
-        // Get the refresh token lifetime from configuration.
         var refreshTokenDays = _config.GetValue<int>(
             "Jwt:RefreshTokenDays",
             60);
 
-        // Create a refresh token entity for the database.
         var refreshToken = new RefreshToken
         {
             UserId = user.Id,
             Token = refreshTokenValue,
-            ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenDays)
+            ExpiresAt = DateTime.UtcNow.AddDays(
+                refreshTokenDays)
         };
 
-        // Save the refresh token to the database.
         await _refreshTokenRepository.AddAsync(refreshToken);
         await _refreshTokenRepository.SaveChangesAsync();
 
-        // Return both tokens to the client.
         return new AuthResponseDto
         {
             AccessToken = accessToken,
             RefreshToken = refreshTokenValue
         };
     }
-
 }

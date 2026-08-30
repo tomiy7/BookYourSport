@@ -19,7 +19,9 @@ public class TokenService : ITokenService
     public string GenerateAccessToken(User user)
     {
         var secret = _config["Jwt:Secret"]
-                     ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+                     ?? throw new InvalidOperationException(
+                         "Jwt:Secret is not configured."
+                     );
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(secret)
@@ -32,11 +34,30 @@ public class TokenService : ITokenService
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.GivenName, user.FirstName),
-            new Claim(ClaimTypes.Surname, user.LastName),
-            new Claim(ClaimTypes.Role, user.Role)
+            new Claim(
+                ClaimTypes.NameIdentifier,
+                user.Id.ToString()
+            ),
+            new Claim(
+                ClaimTypes.Email,
+                user.Email
+            ),
+            new Claim(
+                ClaimTypes.GivenName,
+                user.FirstName
+            ),
+            new Claim(
+                ClaimTypes.Surname,
+                user.LastName
+            ),
+            new Claim(
+                ClaimTypes.Role,
+                user.Role
+            ),
+            new Claim(
+                "approval_status",
+                user.ApprovalStatus
+            )
         };
 
         var token = new JwtSecurityToken(
@@ -48,7 +69,8 @@ public class TokenService : ITokenService
             )
         );
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return new JwtSecurityTokenHandler()
+            .WriteToken(token);
     }
 
     public string GenerateRefreshToken()

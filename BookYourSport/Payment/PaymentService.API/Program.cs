@@ -1,4 +1,5 @@
 using Messaging.Interfaces;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -20,7 +21,6 @@ using PaymentService.Infrastructure.Persistence;
 using PaymentService.Infrastructure.Persistence.Outbox;
 using PaymentService.Infrastructure.Repositories;
 
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,6 +103,7 @@ builder.Services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
 builder.Services.AddScoped<IOutboxWriter, OutboxWriter>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+
 
 var app = builder.Build();
 
