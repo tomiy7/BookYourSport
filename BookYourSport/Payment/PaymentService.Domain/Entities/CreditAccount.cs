@@ -20,7 +20,7 @@ public class CreditAccount
 
     public Guid UserId { get; private set; }
 
-    public int Balance { get; private set; }
+    public decimal Balance { get; private set; }
 
     private readonly List<Transaction> _transactions = new();
 
@@ -28,7 +28,7 @@ public class CreditAccount
         _transactions.AsReadOnly();
 
     // Adds credit to the account and records the payment as a transaction.
-    public void TopUp(int amount, Guid? referenceId)
+    public void TopUp(decimal amount, Guid? referenceId)
     {
         if (amount <= 0)
             throw new ArgumentException(
@@ -46,12 +46,30 @@ public class CreditAccount
     }
 
     // Charges credit for a reservation when sufficient balance is available.
-    public void Charge(int amount, Guid referenceId)
+    public Transaction Charge(decimal amount, Guid referenceId)
     {
         if (amount <= 0)
             throw new ArgumentException(
                 "Charge amount must be greater than zero.",
                 nameof(amount));
+
+        if (referenceId == Guid.Empty)
+            throw new ArgumentException(
+                "Reference ID cannot be empty.",
+                nameof(referenceId));
+
+        var existingTransaction = _transactions.FirstOrDefault(t =>
+            t.Type == TransactionType.ReservationCharge &&
+            t.ReferenceId == referenceId);
+
+        if (existingTransaction is not null)
+        {
+            if (existingTransaction.Amount != amount)
+                throw new InvalidOperationException(
+                    "Reservation has already been charged with a different amount.");
+
+            return existingTransaction;
+        }
 
         if (Balance < amount)
             throw new InvalidOperationException(
@@ -65,19 +83,34 @@ public class CreditAccount
             referenceId);
 
         _transactions.Add(transaction);
+
+        return transaction;
     }
 
     // Refunds credit for a reservation and prevents duplicate refunds.
-    public void Refund(int amount, Guid referenceId)
+    public Transaction Refund(decimal amount, Guid referenceId)
     {
         if (amount <= 0)
             throw new ArgumentException(
                 "Refund amount must be greater than zero.",
                 nameof(amount));
 
+        if (referenceId == Guid.Empty)
+            throw new ArgumentException(
+                "Reference ID cannot be empty.",
+                nameof(referenceId));
+
+        if (!_transactions.Any(t =>
+                t.Type == TransactionType.ReservationCharge &&
+                t.ReferenceId == referenceId))
+        {
+            throw new InvalidOperationException(
+                "Cannot refund a reservation that has not been charged.");
+        }
+
         if (_transactions.Any(t =>
-            t.Type == TransactionType.Refund &&
-            t.ReferenceId == referenceId))
+                t.Type == TransactionType.Refund &&
+                t.ReferenceId == referenceId))
         {
             throw new InvalidOperationException(
                 "Refund has already been processed.");
@@ -91,5 +124,6 @@ public class CreditAccount
             referenceId);
 
         _transactions.Add(transaction);
+        return transaction;
     }
 }

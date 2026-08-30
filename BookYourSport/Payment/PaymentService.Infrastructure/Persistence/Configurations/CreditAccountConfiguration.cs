@@ -22,5 +22,8 @@ public class CreditAccountConfiguration : IEntityTypeConfiguration<CreditAccount
             .HasForeignKey("CreditAccountId")
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(x => x.Transactions)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

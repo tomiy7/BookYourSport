@@ -6,7 +6,7 @@ public class Transaction
 {
     // Creates a transaction after validating its amount and type.
     internal Transaction(
-        int amount,
+        decimal amount,
         TransactionType type,
         Guid? referenceId)
     {
@@ -29,7 +29,7 @@ public class Transaction
 
     public Guid Id { get; private set; }
 
-    public int Amount { get; private set; }
+    public decimal Amount { get; private set; }
 
     public TransactionType Type { get; private set; }
 
