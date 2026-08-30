@@ -55,7 +55,7 @@ services:
 
       - ConnectionStrings__Default=Host=reservationdb;Port=5432;Database=reservationdb;Username=reservation_user;Password=${DB_PASSWORD}
       
-      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Secret=MyVeryLongBookYourSportJwtSecretKey2026Secure
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=guest
       - RabbitMQ__Password=guest

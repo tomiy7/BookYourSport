@@ -1,4 +1,5 @@
-﻿using Messaging.Events;
+﻿using Messaging;
+using Messaging.Events;
 using Messaging.Interfaces;
 using PaymentService.Application.Interfaces;
 using PaymentService.Domain.Services;
@@ -21,7 +22,7 @@ public class RefundCreditHandler
         _eventPublisher = eventPublisher;
     }
 
-    public async Task Handle(RefundCreditCommand command)
+    public async Task<bool> Handle(RefundCreditCommand command)
     {
         if (command.UserId == Guid.Empty)
             throw new ArgumentException(
@@ -40,7 +41,14 @@ public class RefundCreditHandler
 
         // No refund is required according to the cancellation policy.
         if (refundAmount == 0)
-            return;
+        {
+            await _eventPublisher.PublishAsync(new ReservationCancelled(
+                ReservationId: command.ReferenceId,
+                UserId: command.UserId
+            ));
+
+            return true;
+        }
 
         var account = await _creditAccountRepository
             .GetByUserIdAsync(command.UserId);
@@ -62,5 +70,6 @@ public class RefundCreditHandler
             Amount: transaction.Amount,
             Currency: "RSD"
         ));
+        return true;
     }
 }

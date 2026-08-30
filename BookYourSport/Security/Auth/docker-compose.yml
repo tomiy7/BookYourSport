@@ -1,21 +1,54 @@
 services:
+
   authdb:
     image: postgres:16
     container_name: authdb
+
     environment:
       POSTGRES_DB: authdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+
     ports:
       - "5433:5432"
+
     restart: always
+
     volumes:
       - auth_data:/var/lib/postgresql/data
+
     networks:
       - backend
 
+
+  auth_api:
+    build:
+      context: .
+      dockerfile: AuthService.API/Dockerfile
+
+    container_name: auth_api
+
+    depends_on:
+      - authdb
+
+    ports:
+      - "5001:8080"
+
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+
+      - ConnectionStrings__DefaultConnection=Host=authdb;Port=5432;Database=authdb;Username=postgres;Password=${DB_PASSWORD}
+
+      - Jwt__Secret=${JWT_SECRET}
+
+    networks:
+      - backend
+
+
 volumes:
   auth_data:
+
 
 networks:
   backend:

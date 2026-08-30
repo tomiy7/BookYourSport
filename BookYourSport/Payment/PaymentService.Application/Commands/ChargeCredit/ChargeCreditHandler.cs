@@ -1,17 +1,17 @@
-﻿using Messaging.Interfaces;
-using PaymentService.Application.Interfaces;
+﻿using PaymentService.Application.Interfaces;
+using Messaging.Events;
 namespace PaymentService.Application.Commands.ChargeCredit;
 
 public class ChargeCreditHandler
 {
     private readonly ICreditAccountRepository _creditAccountRepository;
-    private readonly IEventPublisher _eventPublisher;
+    private readonly IOutboxWriter _outboxWriter;
     public ChargeCreditHandler(
         ICreditAccountRepository creditAccountRepository,
-        IEventPublisher eventPublisher)
+        IOutboxWriter outboxWriter)
     {
         _creditAccountRepository = creditAccountRepository;
-        _eventPublisher = eventPublisher;
+        _outboxWriter = outboxWriter;
     }
 
     public async Task Handle(ChargeCreditCommand command)
@@ -42,14 +42,14 @@ public class ChargeCreditHandler
             command.Amount,
             command.ReferenceId);
 
-        await _creditAccountRepository.SaveAsync(account);
-
-        await _eventPublisher.PublishAsync(new PaymentSucceeded(
+        _outboxWriter.Add(new PaymentSucceeded(
             PaymentId: transaction.Id,
             UserId: command.UserId,
             Amount: transaction.Amount,
             Currency: "RSD",
             ReservationId: command.ReferenceId
         ));
+
+        await _creditAccountRepository.SaveAsync(account);
     }
 }

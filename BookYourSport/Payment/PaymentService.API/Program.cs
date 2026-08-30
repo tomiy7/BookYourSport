@@ -1,5 +1,8 @@
 using Messaging.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using PaymentService.API.Exceptions;
 using PaymentService.Application.Commands.ChargeCredit;
 using PaymentService.Application.Commands.GenerateContract;
@@ -14,9 +17,30 @@ using PaymentService.Infrastructure.Documents;
 using PaymentService.Infrastructure.Messaging;
 using PaymentService.Infrastructure.Payment;
 using PaymentService.Infrastructure.Persistence;
+using PaymentService.Infrastructure.Persistence.Outbox;
 using PaymentService.Infrastructure.Repositories;
 
+using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
+
+var jwtSecret = builder.Configuration["Jwt:Secret"]
+                ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+builder.Services.AddHostedService<OutboxProcessor>();
+builder.Services.AddAuthorization();
 
 QuestPDF.Settings.License =
     QuestPDF.Infrastructure.LicenseType.Community;
@@ -24,7 +48,22 @@ QuestPDF.Settings.License =
 builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+
+    options.AddSecurityRequirement(document =>
+        new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+        });
+});
 
 // Register payment and credit account services.
 builder.Services.AddScoped<IPaymentProcessor, MockPaymentProcessor>();
@@ -61,6 +100,7 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<GenerateContractHandler>();
 builder.Services.AddScoped<SignContractHandler>();
 builder.Services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
+builder.Services.AddScoped<IOutboxWriter, OutboxWriter>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
@@ -79,7 +119,7 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

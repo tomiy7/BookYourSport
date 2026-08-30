@@ -45,7 +45,8 @@ public class Reservation : AggregateRoot
     public void Confirm()
     {
         if (Status == ReservationStatus.Confirmed)
-            return;
+            throw new ReservationDomainException(
+                "Reservation is already confirmed.");
 
         if (Status != ReservationStatus.Pending)
             throw new ReservationDomainException(

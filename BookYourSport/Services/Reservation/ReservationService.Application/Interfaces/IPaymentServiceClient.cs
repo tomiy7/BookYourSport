@@ -8,9 +8,9 @@ public interface IPaymentServiceClient
         Guid reservationId);
 
     Task RefundAsync(
-       Guid userId,
-       decimal originalAmount,
-       Guid reservationId,
-       DateTime reservationStart,
-       DateTime cancellationTime);
+        Guid userId,
+        decimal originalAmount,
+        Guid reservationId,
+        DateTime reservationStart,
+        DateTime cancellationTime);
 }

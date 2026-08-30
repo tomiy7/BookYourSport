@@ -2,6 +2,7 @@
 using PaymentService.Domain.Entities;
 using PaymentService.Domain.Enums;
 using PaymentService.Domain.Services;
+using Messaging.Interfaces;
 using PaymentService.Tests.Fakes;
 
 namespace PaymentService.Tests.Application;
@@ -34,7 +35,8 @@ public class RefundCreditHandlerTests
 
         var handler = new RefundCreditHandler(
             repository,
-            refundPolicy);
+            refundPolicy,
+            new FakeEventPublisher());
 
         var reservationStart =
             new DateTime(2026, 8, 20, 18, 0, 0);
@@ -95,7 +97,8 @@ public class RefundCreditHandlerTests
 
         var handler = new RefundCreditHandler(
             repository,
-            refundPolicy);
+            refundPolicy,
+            new FakeEventPublisher());
 
         var reservationStart =
             new DateTime(2026, 8, 20, 18, 0, 0);
@@ -136,7 +139,8 @@ public class RefundCreditHandlerTests
 
         var handler = new RefundCreditHandler(
             repository,
-            refundPolicy);
+            refundPolicy,
+            new FakeEventPublisher());
 
         var command = new RefundCreditCommand(
             Guid.NewGuid(),
@@ -180,7 +184,8 @@ public class RefundCreditHandlerTests
 
         var handler = new RefundCreditHandler(
             repository,
-            refundPolicy);
+            refundPolicy,
+            new FakeEventPublisher());
 
         var reservationStart =
             new DateTime(2026, 8, 20, 18, 0, 0);
@@ -246,7 +251,8 @@ public class RefundCreditHandlerTests
 
         var handler = new RefundCreditHandler(
             repository,
-            refundPolicy);
+            refundPolicy,
+            new FakeEventPublisher());
 
         var reservationStart =
             new DateTime(2026, 8, 20, 18, 0, 0);

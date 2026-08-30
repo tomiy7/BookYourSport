@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace Messaging.Events;
 
-namespace Messaging
-{
-    internal class RefundSucceeded
-    {
-    }
-}
+public record RefundSucceeded(
+    Guid PaymentId,
+    Guid UserId,
+    Guid ReservationId,
+    decimal Amount,
+    string Currency
+);

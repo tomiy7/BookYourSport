@@ -107,15 +107,12 @@ public class ReservationBookingService : IReservationService
         try
         {
             // Charge the user's credit account.
+            // Reservation will be confirmed asynchronously
+            // after PaymentSucceeded event is received.
             await _paymentServiceClient.ChargeAsync(
                 createReservationDto.UserId,
                 totalPrice.Amount,
                 reservation.Id);
-
-            // Payment succeeded, so confirm the reservation.
-            reservation.Confirm();
-
-            await _reservationRepository.SaveChangesAsync();
         }
         catch (Exception ex)
         {
@@ -218,12 +215,8 @@ public class ReservationBookingService : IReservationService
             reservation.StartTime,
             cancellationTime);
 
-        reservation.Cancel();
-
-        await _reservationRepository.SaveChangesAsync();
-
         _logger.LogInformation(
-            "Reservation {ReservationId} cancelled",
+            "Refund requested for reservation {ReservationId}",
             reservationId);
 
         return true;

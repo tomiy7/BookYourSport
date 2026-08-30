@@ -25,7 +25,7 @@ public class ChargeCreditHandlerTests
 
         var handler = new ChargeCreditHandler(
             creditAccountRepository,
-            new FakeEventPublisher());
+            new FakeOutboxWriter());
 
         var command = new ChargeCreditCommand(
             userId,
@@ -73,7 +73,7 @@ public class ChargeCreditHandlerTests
 
         var handler = new ChargeCreditHandler(
             repository,
-            new FakeEventPublisher());
+            new FakeOutboxWriter());
 
         var command = new ChargeCreditCommand(
             userId,
@@ -102,7 +102,7 @@ public class ChargeCreditHandlerTests
 
         var handler = new ChargeCreditHandler(
             repository,
-            new FakeEventPublisher());
+            new FakeOutboxWriter());
 
         var command = new ChargeCreditCommand(
             Guid.NewGuid(),
@@ -129,7 +129,7 @@ public class ChargeCreditHandlerTests
 
         var handler = new ChargeCreditHandler(
             repository,
-            new FakeEventPublisher());
+            new FakeOutboxWriter());
 
         var command = new ChargeCreditCommand(
             Guid.NewGuid(),

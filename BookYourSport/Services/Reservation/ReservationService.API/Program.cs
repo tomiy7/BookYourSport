@@ -42,7 +42,7 @@ builder.Services.AddScoped<IClubService, ClubService>();
 builder.Services.AddScoped<ICourtService, CourtService>();
 builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
 builder.Services.AddScoped<IReservationService, ReservationBookingService>();
-
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<IPaymentServiceClient, PaymentServiceClient>(client =>
 {
     client.BaseAddress = new Uri(

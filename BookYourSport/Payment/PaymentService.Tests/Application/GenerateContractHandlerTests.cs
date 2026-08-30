@@ -4,7 +4,6 @@ using PaymentService.Application.Commands.GenerateContract;
 using PaymentService.Application.DTOs;
 using PaymentService.Application.Interfaces;
 using PaymentService.Domain.Contract;
-using PaymentService.Tests.Fakes;
 
 namespace PaymentService.Tests.Application;
 
