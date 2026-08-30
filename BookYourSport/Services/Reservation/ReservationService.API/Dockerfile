@@ -2,7 +2,7 @@
 USER $APP_UID
 WORKDIR /app
 EXPOSE 8080
-EXPOSE 8081
+EXPOSE 8082
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
@@ -11,6 +11,7 @@ COPY ["Services/Reservation/ReservationService.API/ReservationService.API.csproj
 COPY ["Services/Reservation/ReservationService.Application/ReservationService.Application.csproj", "Services/Reservation/ReservationService.Application/"]
 COPY ["Services/Reservation/ReservationService.Domain/ReservationService.Domain.csproj", "Services/Reservation/ReservationService.Domain/"]
 COPY ["Services/Reservation/ReservationService.Infrastructure/ReservationService.Infrastructure.csproj", "Services/Reservation/ReservationService.Infrastructure/"]
+COPY ["Messaging/Messaging.csproj", "Messaging/"]
 RUN dotnet restore "Services/Reservation/ReservationService.API/ReservationService.API.csproj"
 COPY . .
 WORKDIR "/src/Services/Reservation/ReservationService.API"
