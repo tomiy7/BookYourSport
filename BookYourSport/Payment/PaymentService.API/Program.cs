@@ -42,6 +42,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddHostedService<OutboxProcessor>();
 builder.Services.AddAuthorization();
 
+// CORS - allow frontend to communicate with Payment API
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+});
+
 QuestPDF.Settings.License =
     QuestPDF.Infrastructure.LicenseType.Community;
 
@@ -120,6 +127,7 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
