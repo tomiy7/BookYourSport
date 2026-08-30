@@ -8,6 +8,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\ReservationService.Domain\ReservationService.Domain.csproj" />
+      <ProjectReference Include="..\..\..\Messaging\Messaging.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,43 +1,80 @@
 services:
 
   reservationdb:
+
+    image: postgres:16
+
     container_name: reservationdb
+
     environment:
+
       POSTGRES_DB: reservationdb
+
       POSTGRES_USER: reservation_user
+
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-    restart: always
+
     ports:
+
       - "5435:5432"
+
+    restart: always
+
     volumes:
+
       - reservation_data:/var/lib/postgresql/data
+
     networks:
-      - backend
-        
-  reservation.api:
-    container_name: reservation.api
-    depends_on:
-      - reservationdb
-    ports:
-      - "5002:8080"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__Default=Host=reservationdb;Port=5432;Database=reservationdb;Username=reservation_user;Password=${DB_PASSWORD}
-      - Jwt__Secret=${JWT_SECRET}
-    networks:
+
       - backend
 
-  authdb:
-    container_name: authdb
-    environment:
-      POSTGRES_DB: authdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+  reservation.api:
+
+    build:
+
+      context: ../..
+
+      dockerfile: Services/Reservation/ReservationService.API/Dockerfile
+
+    container_name: reservation.api
+
+    depends_on:
+
+      - reservationdb
+
     ports:
-      - "5433:5432"
-    restart: always
-    volumes:
-      - auth_data:/var/lib/postgresql/data
+
+      - "5002:8080"
+      - "5004:8082"
+
+    environment:
+
+      - ASPNETCORE_ENVIRONMENT=Development
+
+      - ASPNETCORE_URLS=http://+:8080
+
+      - ConnectionStrings__Default=Host=reservationdb;Port=5432;Database=reservationdb;Username=reservation_user;Password=${DB_PASSWORD}
+      
+      - Jwt__Secret=MyVeryLongBookYourSportJwtSecretKey2026Secure
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - PaymentService__BaseUrl=http://payment_api:8080
+
     networks:
+
       - backend
+
+
+volumes:
+  reservation_data:
+
+
+networks:
+  backend:
+
+    external: true
+    name: bookyoursport-network
+
+

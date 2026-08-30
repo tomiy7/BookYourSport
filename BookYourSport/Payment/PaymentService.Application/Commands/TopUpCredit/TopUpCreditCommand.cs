@@ -2,5 +2,5 @@
 
 public record TopUpCreditCommand(
     Guid UserId,
-    int Amount,
+    decimal Amount,
     string Currency);

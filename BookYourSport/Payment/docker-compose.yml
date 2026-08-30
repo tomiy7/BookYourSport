@@ -1,0 +1,35 @@
+services:
+  payment_db:
+    image: postgres:16
+    container_name: payment_db
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    networks:
+      - backend
+
+  payment_api:
+    build:
+      context: ..
+      dockerfile: Payment/Dockerfile
+    container_name: payment_api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - payment_db
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest
+      - Jwt__Secret=MyVeryLongBookYourSportJwtSecretKey2026Secure
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: bookyoursport-network

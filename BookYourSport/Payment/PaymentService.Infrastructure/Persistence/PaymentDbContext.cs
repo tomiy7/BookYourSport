@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PaymentService.Domain.Contract;
 using PaymentService.Domain.Entities;
+using PaymentService.Infrastructure.Persistence.Outbox;
 
 namespace PaymentService.Infrastructure.Persistence;
 
@@ -15,6 +16,7 @@ public class PaymentDbContext : DbContext
 
     public DbSet<Contract> Contracts => Set<Contract>();
 
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply all EF Core entity configurations defined in the Infrastructure assembly.

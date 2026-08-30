@@ -2,5 +2,5 @@
 
 public record ChargeCreditCommand(
     Guid UserId,
-    int Amount,
+    decimal Amount,
     Guid ReferenceId);

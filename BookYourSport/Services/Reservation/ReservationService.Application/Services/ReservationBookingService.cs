@@ -13,53 +13,80 @@ public class ReservationBookingService : IReservationService
     private readonly IClubRepository _clubRepository;
     private readonly IReservationRepository _reservationRepository;
     private readonly ILogger<ReservationBookingService> _logger;
+    private readonly IPaymentServiceClient _paymentServiceClient;
 
     public ReservationBookingService(
         IClubRepository clubRepository,
         IReservationRepository reservationRepository,
-        ILogger<ReservationBookingService> logger)
+        ILogger<ReservationBookingService> logger,
+        IPaymentServiceClient paymentServiceClient)
     {
         _clubRepository = clubRepository;
         _reservationRepository = reservationRepository;
         _logger = logger;
+        _paymentServiceClient = paymentServiceClient;
     }
-    
-    public async Task<ReservationDto?> CreateReservationAsync(Guid clubId, Guid courtId, CreateReservationDto createReservationDto)
+
+    public async Task<ReservationDto?> CreateReservationAsync(
+    Guid clubId,
+    Guid courtId,
+    CreateReservationDto createReservationDto)
     {
         var club = await _clubRepository.GetByIdAsync(clubId);
         var court = club?.Courts.FirstOrDefault(c => c.Id == courtId);
 
         if (club == null || court == null)
         {
-            _logger.LogWarning("Reservation attempted for non-existent club {ClubId} or court {CourtId}", clubId, courtId);
+            _logger.LogWarning(
+                "Reservation attempted for non-existent club {ClubId} or court {CourtId}",
+                clubId,
+                courtId);
+
             return null;
         }
-        
+
         if (!club.IsActive)
             throw new ReservationDomainException("Club is not active.");
-        
+
         if (!court.IsActive)
             throw new ReservationDomainException("Court is not active.");
-        
-        var startTime = DateTime.SpecifyKind(createReservationDto.StartTime, DateTimeKind.Utc);
-        var endTime = DateTime.SpecifyKind(createReservationDto.EndTime, DateTimeKind.Utc);
-        
+
+        var startTime = DateTime.SpecifyKind(
+            createReservationDto.StartTime,
+            DateTimeKind.Utc);
+
+        var endTime = DateTime.SpecifyKind(
+            createReservationDto.EndTime,
+            DateTimeKind.Utc);
+
         if (!club.IsOpenDuring(startTime, endTime))
-            throw new ReservationDomainException("Club is not open for the entire requested time range.");
+            throw new ReservationDomainException(
+                "Club is not open for the entire requested time range.");
 
-        if (await _reservationRepository.HasOverlapAsync(courtId, startTime, endTime))
-            throw new ReservationDomainException("This time slot is already booked.");
+        if (await _reservationRepository.HasOverlapAsync(
+                courtId,
+                startTime,
+                endTime))
+        {
+            throw new ReservationDomainException(
+                "This time slot is already booked.");
+        }
 
-        var durationInHours = (decimal)(endTime - startTime).TotalHours;
-        var totalPrice = court.PricePerHour.Multiply(durationInHours);
+        var durationInHours =
+            (decimal)(endTime - startTime).TotalHours;
+
+        var totalPrice =
+            court.PricePerHour.Multiply(durationInHours);
 
         var reservation = Reservation.Create(
-            courtId, clubId, createReservationDto.UserId,
-            startTime, endTime, totalPrice);
-        
-        // TODO for now only confirms but when integrated with payment needs confirmation of payment
-        reservation.Confirm();
-        
+            courtId,
+            clubId,
+            createReservationDto.UserId,
+            startTime,
+            endTime,
+            totalPrice);
+
+        // First persist the reservation as Pending.
         await _reservationRepository.AddAsync(reservation);
 
         try
@@ -69,15 +96,46 @@ public class ReservationBookingService : IReservationService
         catch (DbUpdateException)
         {
             _logger.LogWarning(
-                "Double booking prevented by database constraint for court {CourtId} at {StartTime}",
-                courtId, startTime);
-            throw new ReservationDomainException("This time slot was just booked by someone else.");
+                "Failed to persist pending reservation for court {CourtId} at {StartTime}",
+                courtId,
+                startTime);
+
+            throw new ReservationDomainException(
+                "Could not create reservation.");
         }
-        
+
+        try
+        {
+            // Charge the user's credit account.
+            // Reservation will be confirmed asynchronously
+            // after PaymentSucceeded event is received.
+            await _paymentServiceClient.ChargeAsync(
+                createReservationDto.UserId,
+                totalPrice.Amount,
+                reservation.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Payment failed for reservation {ReservationId}",
+                reservation.Id);
+
+            // Payment failed, so the pending reservation
+            // must not remain active.
+            reservation.Cancel();
+
+            await _reservationRepository.SaveChangesAsync();
+
+            throw;
+        }
+
         _logger.LogInformation(
             "Reservation {ReservationId} created for court {CourtId} by user {UserId}",
-            reservation.Id, courtId, createReservationDto.UserId);
-        
+            reservation.Id,
+            courtId,
+            createReservationDto.UserId);
+
         return MapToDto(reservation);
     }
 
@@ -141,14 +199,26 @@ public class ReservationBookingService : IReservationService
 
         if (reservation == null)
         {
-            _logger.LogWarning("Attempted to cancel non-existent reservation {ReservationId}", reservationId);
+            _logger.LogWarning(
+                "Attempted to cancel non-existent reservation {ReservationId}",
+                reservationId);
+
             return false;
         }
-        
-        reservation.Cancel();
-        await _reservationRepository.SaveChangesAsync();
-        
-        _logger.LogInformation("Reservation {ReservationId} cancelled", reservationId);
+
+        var cancellationTime = DateTime.UtcNow;
+
+        await _paymentServiceClient.RefundAsync(
+            reservation.UserId,
+            reservation.Price.Amount,
+            reservation.Id,
+            reservation.StartTime,
+            cancellationTime);
+
+        _logger.LogInformation(
+            "Refund requested for reservation {ReservationId}",
+            reservationId);
+
         return true;
     }
 

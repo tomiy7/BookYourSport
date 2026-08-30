@@ -1,4 +1,3 @@
-using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -7,7 +6,11 @@ using ReservationService.Application.Interfaces;
 using ReservationService.Application.Services;
 using ReservationService.Domain.Interfaces;
 using ReservationService.Infrastructure.Data;
+using ReservationService.Infrastructure.Messaging;
+using ReservationService.Infrastructure.Payment;
 using ReservationService.Infrastructure.Repositories;
+using ReservationService.API.Grpc;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,8 +43,15 @@ builder.Services.AddScoped<IClubService, ClubService>();
 builder.Services.AddScoped<ICourtService, CourtService>();
 builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
 builder.Services.AddScoped<IReservationService, ReservationBookingService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient<IPaymentServiceClient, PaymentServiceClient>(client =>
+{
+    client.BaseAddress = new Uri(
+        builder.Configuration["PaymentService:BaseUrl"]!);
+});
 
 builder.Services.AddControllers();
+builder.Services.AddGrpc();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -66,6 +76,7 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
+builder.Services.AddHostedService<RabbitMqEventConsumer>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -79,6 +90,8 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapGrpcService<ReservationGrpcService>();
 
 //for development purposes
 using (var scope = app.Services.CreateScope())

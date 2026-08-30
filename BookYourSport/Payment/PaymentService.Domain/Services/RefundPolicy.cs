@@ -3,8 +3,8 @@
 // Defines refund rules based on the time between cancellation and reservation start.
 public class RefundPolicy
 {
-    public int CalculateRefund(
-        int originalAmount,
+    public decimal CalculateRefund(
+        decimal originalAmount,
         DateTime reservationStart,
         DateTime cancellationTime)
     {

@@ -14,17 +14,20 @@ public class ReservationBookingServiceTests
     private readonly FakeClubRepository _clubRepository = new();
     private readonly FakeReservationRepository _reservationRepository = new();
     private readonly ReservationBookingService _sut;
-
+    private readonly FakePaymentServiceClient _paymentServiceClient = new();
+    
     public ReservationBookingServiceTests()
     {
         _sut = new ReservationBookingService(
             _clubRepository,
             _reservationRepository,
-            NullLogger<ReservationBookingService>.Instance);
+            NullLogger<ReservationBookingService>.Instance,
+            _paymentServiceClient);
+
     }
 
     [Fact]
-    public async Task CreateReservationAsync_ValidSlot_ReturnsConfirmedReservation()
+    public async Task CreateReservationAsync_ValidSlot_ReturnsPendingReservation()
     {
         var club = TestData.ActiveClub();
         var court = TestData.AddActiveCourt(club, price: 1500m);
@@ -36,7 +39,7 @@ public class ReservationBookingServiceTests
         var result = await _sut.CreateReservationAsync(club.Id, court.Id, dto);
 
         Assert.NotNull(result);
-        Assert.Equal("Confirmed", result!.Status);
+        Assert.Equal("Pending", result!.Status);
         Assert.Equal(1500m, result.Price.Amount);
     }
 
@@ -107,7 +110,7 @@ public class ReservationBookingServiceTests
         var ex = await Assert.ThrowsAsync<ReservationDomainException>(() =>
             _sut.CreateReservationAsync(club.Id, court.Id, dto));
 
-        Assert.Contains("someone else", ex.Message);
+        Assert.Contains("Could not create reservation", ex.Message);
     }
 
     [Fact]
@@ -159,22 +162,31 @@ public class ReservationBookingServiceTests
     }
 
     [Fact]
-    public async Task CancelReservationAsync_ExistingReservation_FreesUpTheSlot()
+    public async Task CancelReservationAsync_ExistingReservation_RequestsRefund()
     {
         var club = TestData.ActiveClub();
         var court = TestData.AddActiveCourt(club);
         _clubRepository.Seed(club);
 
         var start = TestData.NextMondayAt(9);
-        var createDto = new CreateReservationDto { UserId = Guid.NewGuid(), StartTime = start, EndTime = start.AddHours(1) };
-        var created = await _sut.CreateReservationAsync(club.Id, court.Id, createDto);
 
-        await _sut.CancelReservationAsync(created!.Id);
-        
-        var secondDto = new CreateReservationDto { UserId = Guid.NewGuid(), StartTime = start, EndTime = start.AddHours(1) };
-        var secondResult = await _sut.CreateReservationAsync(club.Id, court.Id, secondDto);
+        var createDto = new CreateReservationDto
+        {
+            UserId = Guid.NewGuid(),
+            StartTime = start,
+            EndTime = start.AddHours(1)
+        };
 
-        Assert.NotNull(secondResult);
+        var created = await _sut.CreateReservationAsync(
+            club.Id,
+            court.Id,
+            createDto);
+
+        var result = await _sut.CancelReservationAsync(created!.Id);
+
+        Assert.True(result);
+        Assert.True(_paymentServiceClient.RefundCalled);
+        Assert.Equal(created.Id, _paymentServiceClient.LastReservationId);
     }
 
     [Fact]

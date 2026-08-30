@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PaymentService.Application.Commands.RefundCredit;
 
 namespace PaymentService.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class RefundController : ControllerBase
@@ -18,8 +20,8 @@ public class RefundController : ControllerBase
     public async Task<IActionResult> Refund(
         [FromBody] RefundCreditCommand command)
     {
-        await _handler.Handle(command);
+        var refunded = await _handler.Handle(command);
 
-        return Ok();
+        return Ok(refunded);
     }
 }

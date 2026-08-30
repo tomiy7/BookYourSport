@@ -1,19 +1,34 @@
+include:
+  - ./BookYourSport/Payment/docker-compose.yml
+  - ./BookYourSport/Search/docker-compose.yml
+  - ./BookYourSport/Security/Auth/docker-compose.yml
+  - ./BookYourSport/Services/Reservation/docker-compose.yml
+
 services:
-  authdb:
-    image: postgres:16
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
 
-  reservationdb:
-    image: postgres:16
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
 
-  reservation.api:
-    build:
-      context: ${PWD}
-      dockerfile: Services/Reservation/ReservationService.API/Dockerfile
+    ports:
+      - "5672:5672"
+      - "15672:15672"
 
-volumes:
-  auth_data:
-  reservation_data:
+    networks:
+      - backend
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 networks:
   backend:
-    driver: bridge
+    external: true
+    name: bookyoursport-network
