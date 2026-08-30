@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
-using System.Net;
-using System.Net.Http.Json;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using ReservationService.Application.Interfaces;
 using ReservationService.Domain.Exceptions;
 
@@ -12,21 +11,22 @@ public class PaymentServiceClient : IPaymentServiceClient
     private readonly HttpClient _httpClient;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
-
     public PaymentServiceClient(
         HttpClient httpClient,
         IHttpContextAccessor httpContextAccessor)
     {
         _httpClient = httpClient;
         _httpContextAccessor = httpContextAccessor;
-
     }
+
     private void ForwardAuthorizationHeader()
     {
         var authorizationHeader =
             _httpContextAccessor.HttpContext?
                 .Request.Headers.Authorization
                 .FirstOrDefault();
+
+        _httpClient.DefaultRequestHeaders.Authorization = null;
 
         if (!string.IsNullOrWhiteSpace(authorizationHeader))
         {
@@ -38,10 +38,10 @@ public class PaymentServiceClient : IPaymentServiceClient
     public async Task ChargeAsync(
         Guid userId,
         decimal amount,
-        Guid reservationId
-     )
+        Guid reservationId)
     {
         ForwardAuthorizationHeader();
+
         var request = new
         {
             UserId = userId,
@@ -58,14 +58,13 @@ public class PaymentServiceClient : IPaymentServiceClient
 
         var detail = await TryReadErrorDetailAsync(response);
 
-        // Payment servis vraća 422 sa porukom "Insufficient credit."
-        // kad korisnik nema dovoljno kredita. To prepoznajemo ovde
-        // kao poseban, imenovan slučaj da bi frontend mogao da
-        // reaguje na to (npr. otvori top-up prozor) umesto da samo
-        // dobije generičku grešku.
-        if (response.StatusCode == HttpStatusCode.UnprocessableEntity &&
-            detail is not null &&
-            detail.Contains("Insufficient credit", StringComparison.OrdinalIgnoreCase))
+        // Bez obzira koji HTTP status Payment Service vrati,
+        // ako je razlog nedovoljno kredita, Reservation Service
+        // treba frontend-u da vrati prepoznatljiv kod.
+        if (!string.IsNullOrWhiteSpace(detail) &&
+            detail.Contains(
+                "Insufficient credit",
+                StringComparison.OrdinalIgnoreCase))
         {
             throw new ReservationDomainException(
                 "Nemaš dovoljno kredita za ovu rezervaciju.",
@@ -81,10 +80,10 @@ public class PaymentServiceClient : IPaymentServiceClient
         decimal originalAmount,
         Guid reservationId,
         DateTime reservationStart,
-        DateTime cancellationTime
-     )
+        DateTime cancellationTime)
     {
         ForwardAuthorizationHeader();
+
         var request = new
         {
             UserId = userId,
@@ -95,10 +94,16 @@ public class PaymentServiceClient : IPaymentServiceClient
         };
 
         var response = await _httpClient.PostAsJsonAsync(
-            "api/Refund",
+            "/api/Refund",
             request);
 
-        response.EnsureSuccessStatusCode();
+        if (response.IsSuccessStatusCode)
+            return;
+
+        var detail = await TryReadErrorDetailAsync(response);
+
+        throw new ReservationDomainException(
+            detail ?? "Povraćaj kredita nije uspeo. Pokušaj ponovo.");
     }
 
     private static async Task<string?> TryReadErrorDetailAsync(
@@ -106,10 +111,35 @@ public class PaymentServiceClient : IPaymentServiceClient
     {
         try
         {
-            var problem = await response.Content
-                .ReadFromJsonAsync<ProblemDetailsBody>();
+            var content = await response.Content.ReadAsStringAsync();
 
-            return problem?.Detail;
+            if (string.IsNullOrWhiteSpace(content))
+                return null;
+
+            try
+            {
+                var problem =
+                    System.Text.Json.JsonSerializer.Deserialize<
+                        ProblemDetailsBody>(
+                        content,
+                        new System.Text.Json.JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+
+                if (!string.IsNullOrWhiteSpace(problem?.Detail))
+                    return problem.Detail;
+
+                if (!string.IsNullOrWhiteSpace(problem?.Title))
+                    return problem.Title;
+            }
+            catch
+            {
+                // Ako odgovor nije ProblemDetails JSON,
+                // koristimo običan tekst odgovora.
+            }
+
+            return content;
         }
         catch
         {
@@ -120,6 +150,7 @@ public class PaymentServiceClient : IPaymentServiceClient
     private class ProblemDetailsBody
     {
         public string? Title { get; set; }
+
         public string? Detail { get; set; }
     }
 }

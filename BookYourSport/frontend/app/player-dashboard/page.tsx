@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import PlayerHeader from "./PlayerHeader";
+import { getAccessToken } from "@/lib/auth";
+import { getBalance } from "@/lib/paymentApi";
 
 interface User {
     firstName: string;
@@ -13,13 +16,30 @@ interface User {
     role: string;
 }
 
+function formatPrice(amount: number, currency = "RSD") {
+    return new Intl.NumberFormat("sr-Latn-RS", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 2,
+    }).format(amount);
+}
+
 export default function PlayerDashboard() {
     const router = useRouter();
 
     const [user, setUser] =
         useState<User | null>(null);
 
+    const [balance, setBalance] =
+        useState(0);
+
+    const [currency, setCurrency] =
+        useState("RSD");
+
     const [loading, setLoading] =
+        useState(true);
+
+    const [walletLoading, setWalletLoading] =
         useState(true);
 
     useEffect(() => {
@@ -64,6 +84,35 @@ export default function PlayerDashboard() {
             setLoading(false);
         }
     }, [router]);
+
+    useEffect(() => {
+        async function loadBalance() {
+            const token = getAccessToken();
+
+            if (!token) {
+                return;
+            }
+
+            try {
+                setWalletLoading(true);
+
+                const wallet =
+                    await getBalance(token);
+
+                setBalance(wallet.balance);
+                setCurrency(wallet.currency);
+            } catch (error) {
+                console.error(
+                    "Greška prilikom učitavanja stanja na računu:",
+                    error
+                );
+            } finally {
+                setWalletLoading(false);
+            }
+        }
+
+        loadBalance();
+    }, []);
 
     if (loading) {
         return (
@@ -137,7 +186,7 @@ export default function PlayerDashboard() {
                     <section
                         onClick={() =>
                             router.push(
-                                "/player-dashboard/topup"
+                                "/player-dashboard/wallet"
                             )
                         }
                         className="cursor-pointer rounded-xl border border-zinc-200 bg-white px-6 py-5 transition hover:border-green-300 hover:shadow-md"
@@ -147,7 +196,9 @@ export default function PlayerDashboard() {
                         </p>
 
                         <h2 className="mt-3 text-3xl font-bold text-zinc-800">
-                            0,00 RSD
+                            {walletLoading
+                                ? "Učitavanje..."
+                                : formatPrice(balance, currency)}
                         </h2>
 
                         <p className="mt-2 text-sm text-zinc-500">
@@ -156,12 +207,21 @@ export default function PlayerDashboard() {
                         </p>
 
                         <div className="mt-6 flex flex-col gap-3">
-                            <span className="rounded-lg bg-green-700 px-4 py-3 text-center text-sm font-semibold text-white">
+                            <span
+                                onClick={(event) => {
+                                    event.stopPropagation();
+
+                                    router.push(
+                                        "/player-dashboard/topup"
+                                    );
+                                }}
+                                className="rounded-lg bg-green-700 px-4 py-3 text-center text-sm font-semibold text-white"
+                            >
                                 Dodaj kredit
                             </span>
 
                             <span className="text-center text-sm font-semibold text-green-800">
-                                Dodaj kredit na račun
+                                Pogledaj stanje na računu
                             </span>
                         </div>
                     </section>
