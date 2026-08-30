@@ -66,7 +66,7 @@ export default function ClubsPage() {
                 setError("");
 
                 const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_RESERVATION_URL}/api/clubs`
+                    `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs`
                 );
 
                 if (!response.ok) {

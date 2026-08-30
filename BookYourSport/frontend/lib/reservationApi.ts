@@ -50,17 +50,17 @@ export type Reservation = {
     status: string;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_RESERVATION_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 if (!API_URL) {
     throw new Error(
-        "NEXT_PUBLIC_RESERVATION_URL nije podešen."
+        "NEXT_PUBLIC_API_URL nije podešen."
     );
 }
 
 export async function getClubs(): Promise<Club[]> {
     const response = await fetch(
-        `${API_URL}/api/clubs`
+        `${API_URL}/reservation/api/clubs`
     );
 
     if (!response.ok) {
@@ -76,7 +76,7 @@ export async function getClub(
     clubId: string
 ): Promise<Club> {
     const response = await fetch(
-        `${API_URL}/api/clubs/${clubId}`
+        `${API_URL}/reservation/api/clubs/${clubId}`
     );
 
     if (!response.ok) {
@@ -94,7 +94,7 @@ export async function getAvailableSlots(
     date: string
 ): Promise<AvailableSlot[]> {
     const response = await fetch(
-        `${API_URL}/api/clubs/${clubId}/courts/${courtId}/availability?date=${date}`
+        `${API_URL}/reservation/api/clubs/${clubId}/courts/${courtId}/availability?date=${date}`
     );
 
     if (!response.ok) {
@@ -114,7 +114,7 @@ export async function createReservation(
     token: string
 ): Promise<Reservation> {
     const response = await fetch(
-        `${API_URL}/api/clubs/${clubId}/courts/${courtId}/reservations`,
+        `${API_URL}/reservation/api/clubs/${clubId}/courts/${courtId}/reservations`,
         {
             method: "POST",
 

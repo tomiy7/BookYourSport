@@ -44,7 +44,7 @@ export default function LoginPage() {
             // ==========================================
 
             const loginResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_AUTH_URL}/auth/login`,
+                `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
                 {
                     method: "POST",
                     headers: {
@@ -85,7 +85,7 @@ export default function LoginPage() {
             // ==========================================
 
             const userResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_AUTH_URL}/auth/me`,
+                `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
                 {
                     method: "GET",
                     headers: {
@@ -136,7 +136,7 @@ export default function LoginPage() {
             // ==========================================
 
             router.push(
-                "/player-dashboard"
+                "/"
             );
 
         } catch (error) {

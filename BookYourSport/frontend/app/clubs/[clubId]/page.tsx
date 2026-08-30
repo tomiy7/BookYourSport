@@ -262,7 +262,7 @@ export default function ClubDetailsPage() {
 
                 const response =
                     await fetch(
-                        `${process.env.NEXT_PUBLIC_RESERVATION_URL}/api/clubs/${clubId}`
+                        `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${clubId}/courts`
                     );
 
                 if (!response.ok) {
@@ -290,7 +290,7 @@ export default function ClubDetailsPage() {
             try {
                 const response =
                     await fetch(
-                        `${process.env.NEXT_PUBLIC_RESERVATION_URL}/api/clubs/${clubId}/courts`
+                        `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${clubId}/courts`
                     );
 
                 if (!response.ok) {
@@ -333,9 +333,9 @@ export default function ClubDetailsPage() {
 
             const response =
                 await fetch(
-                    `${process.env.NEXT_PUBLIC_RESERVATION_URL}/api/clubs/${clubId}/courts/${selectedCourtId}/availability?date=${selectedDate}`
+                    `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${clubId}/courts/${selectedCourtId}/availability?date=${selectedDate}`
                 );
-
+            
             if (!response.ok) {
                 throw new Error();
             }
