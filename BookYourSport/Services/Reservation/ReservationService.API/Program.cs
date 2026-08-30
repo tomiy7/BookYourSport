@@ -9,6 +9,7 @@ using ReservationService.Infrastructure.Data;
 using ReservationService.Infrastructure.Messaging;
 using ReservationService.Infrastructure.Payment;
 using ReservationService.Infrastructure.Repositories;
+using ReservationService.API.Grpc;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +51,7 @@ builder.Services.AddHttpClient<IPaymentServiceClient, PaymentServiceClient>(clie
 });
 
 builder.Services.AddControllers();
+builder.Services.AddGrpc();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -88,6 +90,8 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapGrpcService<ReservationGrpcService>();
 
 //for development purposes
 using (var scope = app.Services.CreateScope())

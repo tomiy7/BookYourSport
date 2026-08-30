@@ -46,6 +46,7 @@ services:
     ports:
 
       - "5002:8080"
+      - "5004:8082"
 
     environment:
 

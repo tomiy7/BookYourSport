@@ -18,7 +18,7 @@ services:
       - search-redis
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - Services__ReservationServiceUrl=http://reservation.api:8080
+      - Services__ReservationServiceUrl=http://reservation.api:8082
       - Redis__ConnectionString=search-redis:6379
     networks:
       - backend
