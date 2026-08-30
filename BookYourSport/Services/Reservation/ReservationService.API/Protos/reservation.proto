@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+option csharp_namespace = "ReservationService.API.Grpc";
+
+package reservation;
+
+service ReservationGrpc {
+  rpc GetClubs (GetClubsRequest) returns (GetClubsResponse);
+}
+
+message GetClubsRequest {
+}
+
+message GetClubsResponse {
+  repeated ClubMessage clubs = 1;
+}
+
+message ClubMessage {
+  string id = 1;
+  string name = 2;
+  bool is_active = 3;
+
+  AddressMessage address = 4;
+  repeated CourtMessage courts = 5;
+  repeated WorkingHoursMessage working_hours = 6;
+}
+
+message AddressMessage {
+  string city = 1;
+  string municipality = 2;
+  string zip_code = 3;
+  string street = 4;
+  string country = 5;
+  string street_number = 6;
+}
+
+message CourtMessage {
+  string id = 1;
+  string club_id = 2;
+  string name = 3;
+  int32 surface_type = 4;
+  bool is_indoor = 5;
+  double price_per_hour = 6;
+  string currency = 7;
+  bool is_active = 8;
+}
+
+message WorkingHoursMessage {
+  int32 day_of_week = 1;
+  string open_time = 2;
+  string close_time = 3;
+  bool is_closed = 4;
+}

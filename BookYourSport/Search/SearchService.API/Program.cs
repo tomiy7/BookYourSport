@@ -12,11 +12,6 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddControllers();
 
-builder.Services.AddHttpClient<IReservationServiceClient, ReservationServiceClient>(client =>
-{
-    client.BaseAddress = new Uri(
-        builder.Configuration["Services:ReservationServiceUrl"]!);
-});
 
 builder.Services.AddScoped<IClubSearchService, ClubSearchService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
@@ -31,6 +26,15 @@ builder.Services.AddHttpClient<IGeocodingService, GeocodingService>(client =>
     client.DefaultRequestHeaders.UserAgent.ParseAdd(
         "BookYourSport-SearchService/1.0");
 });
+
+builder.Services.AddGrpcClient<ReservationService.API.Grpc.ReservationGrpc.ReservationGrpcClient>(options =>
+{
+    options.Address = new Uri(
+        builder.Configuration["Services:ReservationServiceUrl"]!);
+});
+
+builder.Services.AddScoped<IReservationServiceClient, ReservationServiceClient>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
