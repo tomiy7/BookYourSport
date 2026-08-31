@@ -32,22 +32,6 @@ export function getUserRole(): string | null {
     }
 }
 
-export function getUserId(): string | null {
-    const token = getAccessToken();
-
-    if (!token) {
-        return null;
-    }
-
-    try {
-        const decoded = jwtDecode<JwtPayload>(token);
-
-        return decoded.sub ?? null;
-    } catch {
-        return null;
-    }
-}
-
 export function isLoggedIn(): boolean {
     return !!getAccessToken();
 }

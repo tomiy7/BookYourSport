@@ -25,7 +25,7 @@ services:
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=guest
       - RabbitMQ__Password=guest
-      - Jwt__Secret=MyVeryLongBookYourSportJwtSecretKey2026Secure
+      - Jwt__Secret=${JWT_SECRET}
     networks:
       - backend
 

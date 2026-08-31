@@ -39,6 +39,7 @@ export type Club = {
     emailAddress?: string;
     address: Address;
     isActive: boolean;
+    workingHours: WorkingHours[];
     courts: Court[];
 };
 
@@ -87,6 +88,10 @@ async function readJsonOrThrow(
 
     return data;
 }
+
+// ==========================================
+// PUBLIC / PLAYER - PRETRAGA I REZERVACIJE
+// ==========================================
 
 export async function getClubs(): Promise<Club[]> {
     const response = await fetch(
@@ -147,9 +152,7 @@ export async function createReservation(
         `${API_URL}/reservation/api/clubs/${clubId}/courts/${courtId}/reservations`,
         {
             method: "POST",
-
             headers: authHeaders(token),
-
             body: JSON.stringify({
                 startTime,
                 endTime,
@@ -157,12 +160,51 @@ export async function createReservation(
         }
     );
 
-    const data = await response.json();
-
     return readJsonOrThrow(
         response,
         "Rezervacija nije uspela."
     );
+}
+
+export async function getMyReservations(
+    userId: string,
+    token: string
+): Promise<Reservation[]> {
+    const response = await fetch(
+        `${API_URL}/reservation/api/reservations/user/${userId}`,
+        {
+            headers: authHeaders(token),
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(
+            "Nije moguće učitati tvoje rezervacije."
+        );
+    }
+
+    return response.json();
+}
+
+export async function cancelReservation(
+    reservationId: string,
+    token: string
+): Promise<void> {
+    const response = await fetch(
+        `${API_URL}/reservation/api/reservations/${reservationId}/cancel`,
+        {
+            method: "PUT",
+            headers: authHeaders(token),
+        }
+    );
+
+    if (!response.ok) {
+        const data = await response.json().catch(() => null);
+
+        throw new Error(
+            data?.message || "Otkazivanje rezervacije nije uspelo."
+        );
+    }
 }
 
 // ==========================================
