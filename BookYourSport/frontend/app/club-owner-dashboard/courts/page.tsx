@@ -9,6 +9,7 @@ import {
     getClubs,
     createCourt,
     updateCourt,
+    deleteCourt,
     type Club,
     type Court,
     type CourtPayload,
@@ -172,6 +173,30 @@ export default function CourtsPage() {
         }
     }
 
+    async function handleDeleteCourt(court: Court) {
+        if (!club) return;
+
+        const confirmed = window.confirm(
+            `Obriši teren "${court.name}"? Ova akcija je nepovratna.`
+        );
+
+        if (!confirmed) return;
+
+        const token = getAccessToken();
+        if (!token) return;
+
+        try {
+            await deleteCourt(club.id, court.id, token);
+            loadClub();
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "Brisanje terena nije uspelo."
+            );
+        }
+    }
+
     if (loading) {
         return (
             <main className="flex min-h-screen items-center justify-center bg-[#f7f8f7]">
@@ -274,6 +299,13 @@ export default function CourtsPage() {
                                 >
                                     Izmeni
                                 </button>
+
+                                <button
+                                    onClick={() => handleDeleteCourt(court)}
+                                    className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                                >
+                                    Obriši
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -356,16 +388,17 @@ export default function CourtsPage() {
                                             Cena po satu <span className="text-red-500">*</span>
                                         </label>
                                         <input
-                                            type="number"
-                                            min={0}
-                                            step="100"
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
                                             value={form.pricePerHour}
-                                            onChange={(e) =>
+                                            onChange={(e) => {
+                                                const cleaned = e.target.value.replace(/^0+(?=\d)/, "");
                                                 setForm({
                                                     ...form,
-                                                    pricePerHour: Number(e.target.value),
-                                                })
-                                            }
+                                                    pricePerHour: Number(cleaned) || 0,
+                                                });
+                                            }}
                                             required
                                             className="w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
                                         />

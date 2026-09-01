@@ -95,7 +95,7 @@ export default function ClubOwnerHeader() {
             <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-6">
 
                 <Link
-                    href="/club-owner-dashboard"
+                    href="/"
                     className="flex items-center"
                 >
                     <Image

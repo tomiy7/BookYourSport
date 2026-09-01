@@ -129,6 +129,8 @@ public class ReservationBookingService : IReservationService
 
             throw;
         }
+        
+        reservation.Confirm();
 
         _logger.LogInformation(
             "Reservation {ReservationId} created for court {CourtId} by user {UserId}",

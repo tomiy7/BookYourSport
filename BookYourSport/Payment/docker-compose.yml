@@ -22,6 +22,7 @@ services:
       - payment_db
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__PaymentDb=Host=payment_db;Port=5432;Database=payment_db;Username=postgres;Password=postgres
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=guest
       - RabbitMQ__Password=guest

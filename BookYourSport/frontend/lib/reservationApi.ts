@@ -211,6 +211,13 @@ export async function cancelReservation(
 // CLUB OWNER - UPRAVLJANJE KLUBOM
 // ==========================================
 
+export type CreateWorkingHoursPayload = {
+    dayOfWeek: number; // 0=Sunday ... 6=Saturday (System.DayOfWeek na backendu)
+    openTime: string;  // "HH:mm:ss"
+    closeTime: string; // "HH:mm:ss"
+    isClosed: boolean;
+};
+
 export type CreateClubPayload = {
     name: string;
     description?: string;
@@ -222,6 +229,7 @@ export type CreateClubPayload = {
     street: string;
     country: string;
     streetNumber: string;
+    workingHours?: CreateWorkingHoursPayload[];
 };
 
 export async function createClub(
@@ -255,6 +263,7 @@ export type UpdateClubPayload = {
     country: string;
     streetNumber: string;
     isActive: boolean;
+    workingHours?: CreateWorkingHoursPayload[];
 };
 
 export async function updateClub(
