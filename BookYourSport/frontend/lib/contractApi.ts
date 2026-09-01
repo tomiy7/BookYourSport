@@ -7,30 +7,28 @@ export interface Contract {
     signedAt?: string | null;
 }
 
-
 export interface PaymentResult {
     isSuccessful: boolean;
     paymentId: string;
 }
 
 
-const PAYMENT_API_URL =
-    process.env.NEXT_PUBLIC_PAYMENT_API_URL ||
-    process.env.NEXT_PUBLIC_API_URL;
-
-
 // ==========================================
 // API URL
 // ==========================================
 
-function getPaymentApiUrl() {
-    if (!PAYMENT_API_URL) {
+const API_URL =
+    process.env.NEXT_PUBLIC_API_URL;
+
+function getPaymentApiUrl(): string {
+    if (!API_URL) {
         throw new Error(
-            "Payment API URL nije podešen."
+            "NEXT_PUBLIC_API_URL nije podešen."
         );
     }
 
-    return PAYMENT_API_URL;
+    // PaymentService je iza API Gateway-a
+    return `${API_URL}/payment`;
 }
 
 
@@ -40,9 +38,7 @@ function getPaymentApiUrl() {
 
 function getAuthHeaders() {
     const token =
-        localStorage.getItem(
-            "accessToken"
-        );
+        localStorage.getItem("accessToken");
 
     if (!token) {
         throw new Error(
@@ -52,8 +48,7 @@ function getAuthHeaders() {
 
     return {
         Authorization: `Bearer ${token}`,
-        "Content-Type":
-            "application/json",
+        "Content-Type": "application/json",
     };
 }
 
@@ -65,7 +60,7 @@ function getAuthHeaders() {
 async function getErrorMessage(
     response: Response,
     fallback: string
-) {
+): Promise<string> {
     try {
         const data =
             await response.json();
@@ -84,7 +79,7 @@ async function getErrorMessage(
 
 // ==========================================
 // GET CONTRACT BY USER
-// GET /contracts/user/{userId}
+// GET /payment/contracts/user/{userId}
 // ==========================================
 
 export async function getContractByUser(
@@ -96,18 +91,13 @@ export async function getContractByUser(
             `${getPaymentApiUrl()}/contracts/user/${userId}`,
             {
                 method: "GET",
-                headers:
-                    getAuthHeaders(),
+                headers: getAuthHeaders(),
             }
         );
 
-
-    if (
-        response.status === 404
-    ) {
+    if (response.status === 404) {
         return null;
     }
-
 
     if (!response.ok) {
         throw new Error(
@@ -118,14 +108,13 @@ export async function getContractByUser(
         );
     }
 
-
     return response.json();
 }
 
 
 // ==========================================
 // GENERATE CONTRACT
-// POST /contracts/generate
+// POST /payment/contracts/generate
 // ==========================================
 
 export async function generateContract(
@@ -137,17 +126,12 @@ export async function generateContract(
             `${getPaymentApiUrl()}/contracts/generate`,
             {
                 method: "POST",
-
-                headers:
-                    getAuthHeaders(),
-
-                body:
-                    JSON.stringify({
-                        userId,
-                    }),
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    userId,
+                }),
             }
         );
-
 
     if (!response.ok) {
         throw new Error(
@@ -158,14 +142,13 @@ export async function generateContract(
         );
     }
 
-
     return response.json();
 }
 
 
 // ==========================================
 // SIGN CONTRACT
-// POST /contracts/{contractId}/sign
+// POST /payment/contracts/{contractId}/sign
 // ==========================================
 
 export async function signContract(
@@ -177,12 +160,9 @@ export async function signContract(
             `${getPaymentApiUrl()}/contracts/${contractId}/sign`,
             {
                 method: "POST",
-
-                headers:
-                    getAuthHeaders(),
+                headers: getAuthHeaders(),
             }
         );
-
 
     if (!response.ok) {
         throw new Error(
@@ -193,19 +173,18 @@ export async function signContract(
         );
     }
 
-
     return response.json();
 }
 
 
 // ==========================================
 // CONTRACT DOCUMENT URL
-// GET /contracts/{contractId}/document
+// GET /payment/contracts/{contractId}/document
 // ==========================================
 
 export function getContractDocumentUrl(
     contractId: string
-) {
+): string {
     return (
         `${getPaymentApiUrl()}` +
         `/contracts/${contractId}/document`
@@ -215,7 +194,7 @@ export function getContractDocumentUrl(
 
 // ==========================================
 // PAY SUBSCRIPTION
-// POST /api/Subscription/pay
+// POST /payment/api/Subscription/pay
 // ==========================================
 
 export async function paySubscription(
@@ -229,19 +208,14 @@ export async function paySubscription(
             `${getPaymentApiUrl()}/api/Subscription/pay`,
             {
                 method: "POST",
-
-                headers:
-                    getAuthHeaders(),
-
-                body:
-                    JSON.stringify({
-                        userId,
-                        amount,
-                        currency,
-                    }),
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    userId,
+                    amount,
+                    currency,
+                }),
             }
         );
-
 
     if (!response.ok) {
         throw new Error(
@@ -251,7 +225,6 @@ export async function paySubscription(
             )
         );
     }
-
 
     return response.json();
 }

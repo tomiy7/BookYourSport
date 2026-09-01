@@ -28,6 +28,7 @@ import {
 
 import {
     Contract,
+    generateContract,
     getContractByUser,
     getContractDocumentUrl,
     paySubscription,
@@ -465,12 +466,107 @@ export default function PlayerDashboard() {
             }
 
 
-            await Promise.all([
-                loadWallet(),
-                loadContract(
+            const approvalStatus =
+                normalizeStatus(
+                    currentUser.approvalStatus
+                );
+
+
+            const contractStatus =
+                normalizeStatus(
+                    currentUser.contractStatus
+                );
+
+
+            const userId =
+                getUserId(
                     currentUser
-                ),
-            ]);
+                );
+
+
+            // ==========================================
+            // AUTO GENERATE CONTRACT
+            // ==========================================
+
+            if (
+                approvalStatus ===
+                "approved" &&
+
+                contractStatus !==
+                "generated" &&
+
+                contractStatus !==
+                "signed" &&
+
+                userId
+            ) {
+
+                try {
+
+                    setContractLoading(
+                        true
+                    );
+
+
+                    const generatedContract =
+                        await generateContract(
+                            userId
+                        );
+
+
+                    setContract(
+                        generatedContract
+                    );
+
+
+                    // Osvežavamo usera jer je Auth Service
+                    // dobio ContractStatus = Generated.
+                    const refreshedUser =
+                        await refreshCurrentUser();
+
+
+                    const typedUser =
+                        refreshedUser as User;
+
+
+                    setUser(
+                        typedUser
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        "Greška prilikom automatskog generisanja ugovora:",
+                        error
+                    );
+
+
+                    setError(
+                        "Nije moguće automatski generisati ugovor."
+                    );
+
+                } finally {
+
+                    setContractLoading(
+                        false
+                    );
+
+                }
+
+            } else {
+
+                await loadContract(
+                    currentUser
+                );
+
+            }
+
+
+            // ==========================================
+            // LOAD WALLET
+            // ==========================================
+
+            await loadWallet();
 
 
             setLoading(
