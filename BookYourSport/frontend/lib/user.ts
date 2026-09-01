@@ -84,7 +84,7 @@ export function getDashboardPath(
 
     switch (
         normalizedRole
-        ) {
+    ) {
 
         case "admin":
             return "/admin-dashboard";
@@ -93,7 +93,7 @@ export function getDashboardPath(
         case "club":
         case "clubowner":
         case "club owner":
-            return "/club-dashboard";
+            return "/club-owner-dashboard";
 
 
         case "player":

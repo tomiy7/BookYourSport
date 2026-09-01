@@ -63,6 +63,14 @@ public class ClubService : IClubService
         var address = Address.Create(clubDto.City, clubDto.Municipality, clubDto.ZipCode, clubDto.Street, clubDto.Country, clubDto.StreetNumber);
         club.UpdateDetails(clubDto.Name, clubDto.Description, clubDto.PhoneNumber, clubDto.EmailAddress, address);
         
+        if (clubDto.IsActive) club.Activate(); else club.Deactivate();
+        
+        if (clubDto.WorkingHours != null)
+        {
+            foreach (var w in clubDto.WorkingHours)
+                club.SetWorkingHours(w.DayOfWeek, w.OpenTime, w.CloseTime, w.IsClosed);
+        }
+        
         _clubRepository.Update(club);
         await _clubRepository.SaveChangesAsync();
         

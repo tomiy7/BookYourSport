@@ -2,59 +2,23 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { getStoredUser, getDashboardPath } from "@/lib/user";
 
 type UserState = {
     isLoggedIn: boolean;
     name: string;
+    role: string;
 };
 
-function getUserNameFromToken(token: string): string {
-    try {
-        const payload = token.split(".")[1];
-
-        if (!payload) {
-            return "";
-        }
-
-        const decodedPayload = JSON.parse(
-            decodeURIComponent(
-                atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
-                    .split("")
-                    .map((character) => {
-                        return (
-                            "%" +
-                            ("00" + character.charCodeAt(0).toString(16)).slice(
-                                -2
-                            )
-                        );
-                    })
-                    .join("")
-            )
-        );
-
-        return (
-            decodedPayload.firstName ||
-            decodedPayload.name ||
-            decodedPayload.given_name ||
-            decodedPayload.unique_name ||
-            decodedPayload[
-                "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname"
-                ] ||
-            decodedPayload[
-                "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"
-                ] ||
-            ""
-        );
-    } catch {
-        return "";
-    }
-}
-
 export default function Header() {
+    const router = useRouter();
+
     const [user, setUser] = useState<UserState>({
         isLoggedIn: false,
         name: "",
+        role: "",
     });
 
     const [menuOpen, setMenuOpen] = useState(false);
@@ -62,26 +26,22 @@ export default function Header() {
     useEffect(() => {
         function checkAuth() {
             const accessToken = localStorage.getItem("accessToken");
-            const savedUserName = localStorage.getItem("userName");
+            const storedUser = getStoredUser();
 
-            if (!accessToken) {
+            if (!accessToken || !storedUser) {
                 setUser({
                     isLoggedIn: false,
                     name: "",
+                    role: "",
                 });
 
                 return;
             }
 
-            const nameFromToken =
-                getUserNameFromToken(accessToken);
-
             setUser({
                 isLoggedIn: true,
-                name:
-                    savedUserName ||
-                    nameFromToken ||
-                    "Moj nalog",
+                name: storedUser.firstName || "Moj nalog",
+                role: storedUser.role,
             });
         }
 
@@ -110,14 +70,29 @@ export default function Header() {
         };
     }, []);
 
+    function handleMyAccount() {
+        const storedUser = getStoredUser();
+
+        if (!storedUser) {
+            router.push("/login");
+            return;
+        }
+
+        router.push(getDashboardPath(storedUser.role));
+
+        setMenuOpen(false);
+    }
+
     function handleLogout() {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
-        localStorage.removeItem("userName");
+        localStorage.removeItem("user");
+        localStorage.removeItem("firstName");
 
         setUser({
             isLoggedIn: false,
             name: "",
+            role: "",
         });
 
         setMenuOpen(false);
@@ -197,15 +172,13 @@ export default function Header() {
 
                     {menuOpen && (
                         <div className="dropdown-menu">
-                            <Link
-                                href="/player-dashboard"
+                            <button
+                                type="button"
                                 className="dropdown-item"
-                                onClick={() =>
-                                    setMenuOpen(false)
-                                }
+                                onClick={handleMyAccount}
                             >
                                 Moj nalog
-                            </Link>
+                            </button>
 
                             <button
                                 type="button"

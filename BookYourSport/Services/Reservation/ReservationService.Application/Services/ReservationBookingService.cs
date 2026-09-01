@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ReservationService.Application.DTOs;
 using ReservationService.Application.Interfaces;
@@ -26,6 +26,11 @@ public class ReservationBookingService : IReservationService
         _logger = logger;
         _paymentServiceClient = paymentServiceClient;
     }
+
+
+    // =====================================================
+    // CREATE RESERVATION
+    // =====================================================
 
     public async Task<ReservationDto?> CreateReservationAsync(
         Guid clubId,
@@ -67,7 +72,9 @@ public class ReservationBookingService : IReservationService
             createReservationDto.EndTime,
             DateTimeKind.Utc);
 
-        if (!club.IsOpenDuring(startTime, endTime))
+        if (!club.IsOpenDuring(
+                startTime,
+                endTime))
         {
             throw new ReservationDomainException(
                 "Club is not open for the entire requested time range.");
@@ -86,7 +93,8 @@ public class ReservationBookingService : IReservationService
             (decimal)(endTime - startTime).TotalHours;
 
         var totalPrice =
-            court.PricePerHour.Multiply(durationInHours);
+            court.PricePerHour.Multiply(
+                durationInHours);
 
         var reservation = Reservation.Create(
             courtId,
@@ -97,7 +105,8 @@ public class ReservationBookingService : IReservationService
             totalPrice);
 
         // Reservation se prvo čuva kao Pending.
-        await _reservationRepository.AddAsync(reservation);
+        await _reservationRepository.AddAsync(
+            reservation);
 
         try
         {
@@ -138,14 +147,22 @@ public class ReservationBookingService : IReservationService
             throw;
         }
 
+        reservation.Confirm();
+
         _logger.LogInformation(
             "Reservation {ReservationId} created for court {CourtId} by user {UserId}",
             reservation.Id,
             courtId,
             createReservationDto.UserId);
 
-        return MapToDto(reservation);
+        return MapToDto(
+            reservation);
     }
+
+
+    // =====================================================
+    // RESCHEDULE RESERVATION
+    // =====================================================
 
     public async Task<ReservationDto?> RescheduleReservationAsync(
         Guid reservationId,
@@ -219,15 +236,15 @@ public class ReservationBookingService : IReservationService
                 "This time slot is already booked.");
         }
 
-        // Čuvamo staru cenu PRE promene rezervacije.
+        // Čuvamo staru cenu pre promene rezervacije.
         var oldPrice = reservation.Price;
 
-        // Računamo novu cenu prema novom broju sati.
         var durationInHours =
             (decimal)(newEndTime - newStartTime).TotalHours;
 
         var newPrice =
-            court.PricePerHour.Multiply(durationInHours);
+            court.PricePerHour.Multiply(
+                durationInHours);
 
         _logger.LogInformation(
             "Reschedule payment check for reservation {ReservationId}. Old price: {OldPrice}, New price: {NewPrice}",
@@ -235,17 +252,17 @@ public class ReservationBookingService : IReservationService
             oldPrice.Amount,
             newPrice.Amount);
 
+
         // =====================================================
         // NOVA CENA JE VEĆA
-        // Naplaćuje se SAMO razlika.
-        //
-        // Ako korisnik nema dovoljno kredita, ChargeAsync baca
-        // exception i reservation.Reschedule() se NE izvršava.
+        // Naplaćuje se samo razlika.
         // =====================================================
+
         if (newPrice.Amount > oldPrice.Amount)
         {
             var amountToCharge =
-                newPrice.Amount - oldPrice.Amount;
+                newPrice.Amount -
+                oldPrice.Amount;
 
             _logger.LogInformation(
                 "Reschedule requires additional charge of {Amount} for reservation {ReservationId}",
@@ -262,17 +279,17 @@ public class ReservationBookingService : IReservationService
                 reservation.Id);
         }
 
+
         // =====================================================
         // NOVA CENA JE MANJA
         // Refundira se razlika.
-        //
-        // Payment Service / RefundPolicy određuje da li je
-        // refund prema policy dozvoljen i koliki je stvarni iznos.
         // =====================================================
+
         else if (newPrice.Amount < oldPrice.Amount)
         {
             var amountToRefund =
-                oldPrice.Amount - newPrice.Amount;
+                oldPrice.Amount -
+                newPrice.Amount;
 
             _logger.LogInformation(
                 "Reschedule requires refund of {Amount} for reservation {ReservationId}",
@@ -291,10 +308,12 @@ public class ReservationBookingService : IReservationService
                 reservation.Id);
         }
 
+
         // =====================================================
         // CENA JE ISTA
         // Nema payment akcije.
         // =====================================================
+
         else
         {
             _logger.LogInformation(
@@ -302,8 +321,8 @@ public class ReservationBookingService : IReservationService
                 reservation.Id);
         }
 
-        // Tek nakon uspešne payment akcije menjamo rezervaciju.
-        // Ako ChargeAsync baci exception, ovaj kod se ne izvršava.
+
+        // Rezervacija se menja tek nakon uspešne payment akcije.
         reservation.Reschedule(
             newStartTime,
             newEndTime,
@@ -328,8 +347,14 @@ public class ReservationBookingService : IReservationService
             reservationId,
             newStartTime);
 
-        return MapToDto(reservation);
+        return MapToDto(
+            reservation);
     }
+
+
+    // =====================================================
+    // CANCEL RESERVATION
+    // =====================================================
 
     public async Task<bool> CancelReservationAsync(
         Guid reservationId)
@@ -347,7 +372,8 @@ public class ReservationBookingService : IReservationService
             return false;
         }
 
-        var cancellationTime = DateTime.UtcNow;
+        var cancellationTime =
+            DateTime.UtcNow;
 
         _logger.LogInformation(
             "Cancellation requested for reservation {ReservationId}. " +
@@ -377,27 +403,44 @@ public class ReservationBookingService : IReservationService
         return true;
     }
 
+
+    // =====================================================
+    // GET RESERVATIONS BY USER
+    // =====================================================
+
     public async Task<List<ReservationDto>> GetByUserIdAsync(
         Guid userId)
     {
         var reservations =
-            await _reservationRepository.GetByUserAsync(userId);
+            await _reservationRepository.GetByUserAsync(
+                userId);
 
         return reservations
             .Select(MapToDto)
             .ToList();
     }
+
+
+    // =====================================================
+    // GET RESERVATIONS BY CLUB
+    // =====================================================
 
     public async Task<List<ReservationDto>> GetByClubIdAsync(
         Guid clubId)
     {
         var reservations =
-            await _reservationRepository.GetByClubAsync(clubId);
+            await _reservationRepository.GetByClubAsync(
+                clubId);
 
         return reservations
             .Select(MapToDto)
             .ToList();
     }
+
+
+    // =====================================================
+    // MAP ENTITY TO DTO
+    // =====================================================
 
     private static ReservationDto MapToDto(
         Reservation reservation)
@@ -410,12 +453,15 @@ public class ReservationBookingService : IReservationService
             UserId = reservation.UserId,
             StartTime = reservation.StartTime,
             EndTime = reservation.EndTime,
+
             Price = new PriceDto
             {
                 Amount = reservation.Price.Amount,
                 Currency = reservation.Price.Currency
             },
-            Status = reservation.Status.ToString()
+
+            Status =
+                reservation.Status.ToString()
         };
     }
 }

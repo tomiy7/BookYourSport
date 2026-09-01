@@ -91,8 +91,10 @@ function formatSurfaceType(
 
     if (typeof surfaceType === "number") {
         const map: Record<number, string> = {
-            0: "Šljaka",
-            1: "Beton",
+            0: "Beton",   // Hard
+            1: "Šljaka",  // Clay
+            2: "Trava",   // Grass
+            3: "Tepih",   // Carpet
         };
 
         return map[surfaceType] || "";
@@ -104,14 +106,20 @@ function formatSurfaceType(
         .replace(/[_-]/g, "");
 
     const map: Record<string, string> = {
-        clay: "Šljaka",
-        sljaka: "Šljaka",
-        "šljaka": "Šljaka",
-
         hard: "Beton",
         hardcourt: "Beton",
         concrete: "Beton",
         beton: "Beton",
+
+        clay: "Šljaka",
+        sljaka: "Šljaka",
+        "šljaka": "Šljaka",
+
+        grass: "Trava",
+        trava: "Trava",
+
+        carpet: "Tepih",
+        tepih: "Tepih",
     };
 
     return map[normalized] || surfaceType;
