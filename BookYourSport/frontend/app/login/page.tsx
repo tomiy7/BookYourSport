@@ -5,30 +5,55 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+import {
+    getDashboardPath,
+} from "@/lib/user";
+
+
 type LoginForm = {
     email: string;
     password: string;
 };
 
+
 export default function LoginPage() {
-    const router = useRouter();
+    const router =
+        useRouter();
 
-    const [form, setForm] = useState<LoginForm>({
-        email: "",
-        password: "",
-    });
 
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [form, setForm] =
+        useState<LoginForm>({
+            email: "",
+            password: "",
+        });
+
+
+    const [error, setError] =
+        useState("");
+
+
+    const [loading, setLoading] =
+        useState(false);
+
+
+    // ==========================================
+    // INPUT CHANGE
+    // ==========================================
 
     function handleChange(
         e: React.ChangeEvent<HTMLInputElement>
     ) {
         setForm({
             ...form,
-            [e.target.name]: e.target.value,
+            [e.target.name]:
+            e.target.value,
         });
     }
+
+
+    // ==========================================
+    // LOGIN
+    // ==========================================
 
     async function handleSubmit(
         e: React.FormEvent
@@ -38,33 +63,67 @@ export default function LoginPage() {
         setError("");
         setLoading(true);
 
+
         try {
+
             // ==========================================
             // LOGIN
             // ==========================================
 
-            const loginResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(form),
-                }
-            );
+            const loginResponse =
+                await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+                    {
+                        method: "POST",
 
-            const loginData =
-                await loginResponse.json();
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body: JSON.stringify(
+                            form
+                        ),
+                    }
+                );
+
+
+            let loginData;
+
+            try {
+                loginData =
+                    await loginResponse.json();
+            } catch {
+                throw new Error(
+                    "Server nije vratio ispravan odgovor."
+                );
+            }
+
 
             if (!loginResponse.ok) {
+
                 setError(
-                    loginData.message ||
+                    loginData?.message ||
+                    loginData?.detail ||
                     "Pogrešan email ili lozinka."
                 );
 
                 return;
             }
+
+
+            // ==========================================
+            // PROVERA TOKENA
+            // ==========================================
+
+            if (!loginData?.accessToken) {
+
+                throw new Error(
+                    "Server nije vratio access token."
+                );
+
+            }
+
 
             // ==========================================
             // CUVANJE TOKENA
@@ -75,27 +134,37 @@ export default function LoginPage() {
                 loginData.accessToken
             );
 
-            localStorage.setItem(
-                "refreshToken",
-                loginData.refreshToken
-            );
+
+            if (loginData.refreshToken) {
+
+                localStorage.setItem(
+                    "refreshToken",
+                    loginData.refreshToken
+                );
+
+            }
+
 
             // ==========================================
-            // DOHVATAMO STVARNOG USERA
+            // DOHVAT STVARNOG USERA
             // ==========================================
 
-            const userResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-                {
-                    method: "GET",
-                    headers: {
-                        Authorization:
-                            `Bearer ${loginData.accessToken}`,
-                    },
-                }
-            );
+            const userResponse =
+                await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+                    {
+                        method: "GET",
+
+                        headers: {
+                            Authorization:
+                                `Bearer ${loginData.accessToken}`,
+                        },
+                    }
+                );
+
 
             if (!userResponse.ok) {
+
                 localStorage.removeItem(
                     "accessToken"
                 );
@@ -104,13 +173,30 @@ export default function LoginPage() {
                     "refreshToken"
                 );
 
+
                 throw new Error(
                     "Nije moguće učitati podatke korisnika."
                 );
+
             }
+
 
             const userData =
                 await userResponse.json();
+
+
+            // ==========================================
+            // PROVERA ROLE
+            // ==========================================
+
+            if (!userData?.role) {
+
+                throw new Error(
+                    "Korisnik nema dodeljenu ulogu."
+                );
+
+            }
+
 
             // ==========================================
             // CUVANJE USERA
@@ -118,46 +204,92 @@ export default function LoginPage() {
 
             localStorage.setItem(
                 "user",
-                JSON.stringify(userData)
+                JSON.stringify(
+                    userData
+                )
             );
+
 
             localStorage.setItem(
                 "firstName",
-                userData.firstName
+                userData.firstName || ""
             );
 
-            // Obaveštavamo Header.
+
+            // ==========================================
+            // OBAVESTAVAMO HEADER
+            // ==========================================
+
             window.dispatchEvent(
-                new Event("auth-change")
+                new Event(
+                    "auth-change"
+                )
             );
 
+
             // ==========================================
-            // REDIRECT
+            // ROLE BASED REDIRECT
             // ==========================================
 
-            router.push(
-                "/"
+            const dashboardPath =
+                getDashboardPath(
+                    userData.role
+                );
+
+
+            router.replace(
+                dashboardPath
             );
+
 
         } catch (error) {
-            console.error(error);
 
-            setError(
-                "Greška pri povezivanju sa serverom."
+            console.error(
+                "Login error:",
+                error
             );
+
+
+            // Ako je vec Error,
+            // prikazujemo konkretnu poruku.
+
+            if (error instanceof Error) {
+
+                setError(
+                    error.message
+                );
+
+            } else {
+
+                setError(
+                    "Greška pri povezivanju sa serverom."
+                );
+
+            }
+
         } finally {
+
             setLoading(false);
+
         }
     }
 
+
     return (
         <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-green-100 px-6 py-8">
+
             <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center">
+
+
+                {/* ================================= */}
+                {/* LOGO */}
+                {/* ================================= */}
 
                 <Link
                     href="/"
                     className="mb-5 flex justify-center"
                 >
+
                     <Image
                         src="/logo.png"
                         alt="BookYourSport"
@@ -166,31 +298,60 @@ export default function LoginPage() {
                         priority
                         className="h-auto w-[180px] object-contain"
                     />
+
                 </Link>
+
+
+                {/* ================================= */}
+                {/* LOGIN CARD */}
+                {/* ================================= */}
 
                 <div className="rounded-2xl border border-green-100 bg-white p-8 shadow-xl shadow-green-900/10">
 
+
+                    {/* TITLE */}
+
                     <div className="mb-8 text-center">
+
                         <h1 className="text-3xl font-bold text-zinc-900">
                             Dobrodošao nazad
                         </h1>
 
+
                         <p className="mt-2 text-sm text-zinc-500">
-                            Prijavi se i nastavi sa rezervacijom svojih termina.
+                            Prijavi se i nastavi na svoj nalog.
                         </p>
+
                     </div>
 
+
+                    {/* ERROR */}
+
                     {error && (
+
                         <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+
                             {error}
+
                         </div>
+
                     )}
 
+
+                    {/* FORM */}
+
                     <form
-                        onSubmit={handleSubmit}
+                        onSubmit={
+                            handleSubmit
+                        }
                         className="flex flex-col gap-5"
                     >
+
+
+                        {/* EMAIL */}
+
                         <div>
+
                             <label
                                 htmlFor="email"
                                 className="mb-2 block text-sm font-semibold text-zinc-700"
@@ -200,22 +361,31 @@ export default function LoginPage() {
                                 <span className="ml-1 text-red-500">
                                     *
                                 </span>
+
                             </label>
+
 
                             <input
                                 id="email"
                                 name="email"
                                 type="email"
                                 value={form.email}
-                                onChange={handleChange}
+                                onChange={
+                                    handleChange
+                                }
                                 maxLength={255}
                                 required
                                 placeholder="Unesi svoj email"
                                 className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                             />
+
                         </div>
 
+
+                        {/* PASSWORD */}
+
                         <div>
+
                             <label
                                 htmlFor="password"
                                 className="mb-2 block text-sm font-semibold text-zinc-700"
@@ -225,32 +395,49 @@ export default function LoginPage() {
                                 <span className="ml-1 text-red-500">
                                     *
                                 </span>
+
                             </label>
+
 
                             <input
                                 id="password"
                                 name="password"
                                 type="password"
                                 value={form.password}
-                                onChange={handleChange}
+                                onChange={
+                                    handleChange
+                                }
                                 required
                                 placeholder="Unesi svoju lozinku"
                                 className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                             />
+
                         </div>
+
+
+                        {/* SUBMIT */}
 
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={
+                                loading
+                            }
                             className="mt-2 rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
+
                             {loading
                                 ? "Prijavljivanje..."
                                 : "Prijavi se"}
+
                         </button>
+
                     </form>
 
+
+                    {/* REGISTER */}
+
                     <p className="mt-7 text-center text-sm text-zinc-600">
+
                         Nemaš nalog?{" "}
 
                         <Link
@@ -259,13 +446,18 @@ export default function LoginPage() {
                         >
                             Registruj se
                         </Link>
+
                     </p>
+
                 </div>
+
 
                 <p className="mt-6 text-center text-sm text-zinc-500">
                     © 2026 BookYourSport
                 </p>
+
             </div>
+
         </main>
     );
 }

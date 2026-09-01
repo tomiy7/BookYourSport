@@ -25,51 +25,66 @@ public class RefundCreditHandler
     public async Task<bool> Handle(RefundCreditCommand command)
     {
         if (command.UserId == Guid.Empty)
+        {
             throw new ArgumentException(
                 "User ID cannot be empty.",
                 nameof(command.UserId));
+        }
 
         if (command.ReferenceId == Guid.Empty)
+        {
             throw new ArgumentException(
                 "Reference ID cannot be empty.",
                 nameof(command.ReferenceId));
-
-        var refundAmount = _refundPolicy.CalculateRefund(
-            command.OriginalAmount,
-            command.ReservationStart,
-            command.CancellationTime);
-
-        // No refund is required according to the cancellation policy.
-        if (refundAmount == 0)
-        {
-            await _eventPublisher.PublishAsync(new ReservationCancelled(
-                ReservationId: command.ReferenceId,
-                UserId: command.UserId
-            ));
-
-            return true;
         }
 
-        var account = await _creditAccountRepository
-            .GetByUserIdAsync(command.UserId);
+        // Ako je ovo pravi Cancel, koristimo RefundPolicy.
+        // Kod reschedule-a refundiramo iznos koji Reservation Service pošalje.
+        var refundAmount = command.CancelReservation
+            ? _refundPolicy.CalculateRefund(
+                command.OriginalAmount,
+                command.ReservationStart,
+                command.CancellationTime)
+            : command.OriginalAmount;
 
-        if (account is null)
-            throw new InvalidOperationException(
-                "Credit account not found.");
+        if (refundAmount > 0)
+        {
+            var account = await _creditAccountRepository
+                .GetByUserIdAsync(command.UserId);
 
-        var transaction = account.Refund(
-            refundAmount,
-            command.ReferenceId);
+            if (account is null)
+            {
+                throw new InvalidOperationException(
+                    "Credit account not found.");
+            }
 
-        await _creditAccountRepository.SaveAsync(account);
+            var transaction = account.Refund(
+                refundAmount,
+                command.ReferenceId);
 
-        await _eventPublisher.PublishAsync(new RefundSucceeded(
-            PaymentId: transaction.Id,
-            UserId: command.UserId,
-            ReservationId: command.ReferenceId,
-            Amount: transaction.Amount,
-            Currency: "RSD"
-        ));
+            await _creditAccountRepository.SaveAsync(account);
+
+            await _eventPublisher.PublishAsync(
+                new RefundSucceeded(
+                    PaymentId: transaction.Id,
+                    UserId: command.UserId,
+                    ReservationId: command.ReferenceId,
+                    Amount: transaction.Amount,
+                    Currency: "RSD"
+                ));
+        }
+
+        // ReservationCancelled šaljemo ISKLJUČIVO
+        // kada je korisnik stvarno otkazao rezervaciju.
+        if (command.CancelReservation)
+        {
+            await _eventPublisher.PublishAsync(
+                new ReservationCancelled(
+                    ReservationId: command.ReferenceId,
+                    UserId: command.UserId
+                ));
+        }
+
         return true;
     }
 }
