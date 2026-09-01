@@ -10,7 +10,9 @@ public class FakePdfContractGenerator : IPdfContractGenerator
     public Task<string> GenerateContractAsync(
         Guid userId,
         string firstName,
-        string lastName)
+        string lastName,
+        decimal amount,
+        string currency)
     {
         return Task.FromResult(DocumentPath);
     }

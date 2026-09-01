@@ -38,13 +38,16 @@ public class GenerateContractHandler
             throw new InvalidOperationException(
                 "User must be approved by an admin before a contract can be generated.");
         }
-        
+
         // Generate the contract document using the user's data.
         var documentPath =
             await _pdfContractGenerator.GenerateContractAsync(
                 user.Id,
                 user.FirstName,
-                user.LastName);
+                user.LastName,
+                command.Amount,
+                command.Currency
+                );
 
         // Create the domain contract with the generated document.
         var contract = new Contract(
