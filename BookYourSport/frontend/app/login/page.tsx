@@ -265,17 +265,32 @@ export default function LoginPage() {
             );
 
             // ==========================================
-            // ROLE BASED REDIRECT
+            // REDIRECT NAKON LOGIN-a
             // ==========================================
 
-            const dashboardPath =
-                getDashboardPath(
-                    userData.role
-                );
+            /*
+             * Player nakon logina ide na homepage.
+             *
+             * Ostale role idu na svoj dashboard:
+             * - Club Owner -> /club-owner-dashboard
+             * - Admin -> /admin-dashboard
+             */
 
-            router.replace(
-                dashboardPath
-            );
+            if (
+                userData.role?.toLowerCase() ===
+                "player"
+            ) {
+                router.replace("/");
+            } else {
+                const dashboardPath =
+                    getDashboardPath(
+                        userData.role
+                    );
+
+                router.replace(
+                    dashboardPath
+                );
+            }
 
         } catch (error) {
             console.error(
