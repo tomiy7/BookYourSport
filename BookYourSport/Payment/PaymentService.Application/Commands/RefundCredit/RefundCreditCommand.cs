@@ -5,4 +5,9 @@ public record RefundCreditCommand(
     decimal OriginalAmount,
     Guid ReferenceId,
     DateTime ReservationStart,
-    DateTime CancellationTime);
+    DateTime CancellationTime,
+
+    // true = refund zbog otkazivanja rezervacije
+    // false = refund razlike zbog reschedule-a
+    bool CancelReservation
+);

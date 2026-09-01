@@ -1,23 +1,78 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 import PlayerHeader from "../PlayerHeader";
 import Footer from "../../Footer";
+import { getAccessToken } from "@/lib/auth";
 
 export default function OwnerRequestPage() {
-    const [clubName, setClubName] = useState("");
-    const [city, setCity] = useState("");
-    const [description, setDescription] = useState("");
+    const router = useRouter();
+
     const [message, setMessage] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
 
-    function handleSubmit(
-        e: React.FormEvent<HTMLFormElement>
-    ) {
-        e.preventDefault();
+    async function handleSubmit() {
+        const token = getAccessToken();
 
-        setMessage(
-            "Tvoj zahtev je uspešno pripremljen za slanje."
-        );
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError("");
+            setMessage("");
+
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/auth/request-club-ownership`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                let errorMessage =
+                    "Slanje zahteva nije uspelo. Pokušaj ponovo.";
+
+                try {
+                    const data = await response.json();
+
+                    errorMessage =
+                        data.detail ||
+                        data.message ||
+                        data.title ||
+                        errorMessage;
+                } catch {
+                    // Ako backend ne vrati JSON, ostavljamo podrazumevanu poruku.
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            setSuccess(true);
+            setMessage(
+                "Tvoj zahtev za Club Owner nalog je uspešno poslat. Administrator će ga pregledati."
+            );
+        } catch (err) {
+            setSuccess(false);
+
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "Slanje zahteva nije uspelo. Pokušaj ponovo."
+            );
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -35,93 +90,71 @@ export default function OwnerRequestPage() {
                     </h1>
 
                     <p className="mt-3 leading-6 text-zinc-600">
-                        Ako upravljaš teniskim klubom, možeš poslati
-                        zahtev za Club Owner nalog i nakon odobrenja
-                        upravljati svojim terenima i rezervacijama.
+                        Ako upravljaš sportskim klubom, možeš poslati zahtev
+                        za Club Owner nalog. Nakon što administrator pregleda
+                        i odobri zahtev, nastavićeš proces aktivacije Club
+                        Owner naloga.
                     </p>
                 </div>
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="mt-10 rounded-xl border border-zinc-200 bg-white p-6 sm:p-8"
-                >
+                <div className="mt-10 rounded-xl border border-zinc-200 bg-white p-6 sm:p-8">
                     {message && (
-                        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm leading-6 text-green-800">
                             {message}
                         </div>
                     )}
 
-                    <div className="space-y-6">
-                        <div>
-                            <label
-                                htmlFor="clubName"
-                                className="mb-2 block text-sm font-semibold text-zinc-700"
-                            >
-                                Naziv kluba
-                            </label>
-
-                            <input
-                                id="clubName"
-                                type="text"
-                                value={clubName}
-                                onChange={(e) =>
-                                    setClubName(e.target.value)
-                                }
-                                required
-                                className="w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
-                            />
+                    {error && (
+                        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+                            {error}
                         </div>
+                    )}
 
-                        <div>
-                            <label
-                                htmlFor="city"
-                                className="mb-2 block text-sm font-semibold text-zinc-700"
+                    {!success && (
+                        <>
+                            <div className="rounded-lg bg-zinc-50 p-5">
+                                <h2 className="font-semibold text-zinc-900">
+                                    Šta se dešava nakon slanja zahteva?
+                                </h2>
+
+                                <div className="mt-4 space-y-3 text-sm leading-6 text-zinc-600">
+                                    <p>
+                                        1. Tvoj zahtev će biti evidentiran na
+                                        platformi.
+                                    </p>
+
+                                    <p>
+                                        2. Administrator će pregledati zahtev
+                                        i odlučiti da li će biti odobren.
+                                    </p>
+
+                                    <p>
+                                        3. Nakon odobrenja nastavljaš proces
+                                        aktivacije svog Club Owner naloga.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={loading}
+                                className="mt-6 w-full rounded-lg bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                Grad
-                            </label>
+                                {loading
+                                    ? "Slanje zahteva..."
+                                    : "Pošalji zahtev"}
+                            </button>
+                        </>
+                    )}
 
-                            <input
-                                id="city"
-                                type="text"
-                                value={city}
-                                onChange={(e) =>
-                                    setCity(e.target.value)
-                                }
-                                required
-                                className="w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
-                            />
-                        </div>
-
-                        <div>
-                            <label
-                                htmlFor="description"
-                                className="mb-2 block text-sm font-semibold text-zinc-700"
-                            >
-                                Dodatne informacije
-                            </label>
-
-                            <textarea
-                                id="description"
-                                rows={5}
-                                value={description}
-                                onChange={(e) =>
-                                    setDescription(
-                                        e.target.value
-                                    )
-                                }
-                                placeholder="Opiši klub i svoju ulogu."
-                                className="w-full resize-none rounded-lg border border-zinc-300 px-4 py-3 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            className="w-full rounded-lg bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800"
-                        >
-                            Pošalji zahtev
-                        </button>
-                    </div>
-                </form>
+                    <Link
+                        href="/player-dashboard"
+                        className="mt-5 block text-center text-sm font-semibold text-green-700 transition hover:text-green-800"
+                    >
+                        ← Nazad na moj nalog
+                    </Link>
+                </div>
             </section>
 
             <Footer />

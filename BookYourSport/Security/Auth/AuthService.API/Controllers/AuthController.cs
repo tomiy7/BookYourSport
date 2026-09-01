@@ -174,7 +174,13 @@ public class AuthController : ControllerBase
             Email = user.Email,
             City = user.City,
             DateOfBirth = user.DateOfBirth,
-            Role = user.Role
+            Role = user.Role,
+            ApprovalStatus =
+                user.ApprovalStatus,
+            ContractStatus =
+                user.ContractStatus,
+            SubscriptionStatus =
+                user.SubscriptionStatus
         });
     }
 
@@ -247,7 +253,16 @@ public class AuthController : ControllerBase
             Email = user.Email,
             City = user.City,
             DateOfBirth = user.DateOfBirth,
-            Role = user.Role
+            Role = user.Role,
+
+            ApprovalStatus =
+                user.ApprovalStatus,
+
+            ContractStatus =
+                user.ContractStatus,
+
+            SubscriptionStatus =
+                user.SubscriptionStatus
         });
     }
 
