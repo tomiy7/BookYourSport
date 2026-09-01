@@ -15,6 +15,16 @@ type RegisterForm = {
     dateOfBirth: string;
 };
 
+type FieldErrors = {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+    city?: string;
+    dateOfBirth?: string;
+};
+
 export default function RegisterPage() {
     const router = useRouter();
 
@@ -28,29 +38,94 @@ export default function RegisterPage() {
         dateOfBirth: "",
     });
 
+    const [fieldErrors, setFieldErrors] =
+        useState<FieldErrors>({});
+
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
-    const [registrationSuccess, setRegistrationSuccess] = useState(false);
+    const [registrationSuccess, setRegistrationSuccess] =
+        useState(false);
 
-    function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    function handleChange(
+        e: React.ChangeEvent<HTMLInputElement>
+    ) {
+        const { name, value } = e.target;
+
         setForm({
             ...form,
-            [e.target.name]: e.target.value,
+            [name]: value,
         });
+
+        setFieldErrors((previous) => ({
+            ...previous,
+            [name]: undefined,
+        }));
+
+        setError("");
     }
 
-    async function handleSubmit(e: React.FormEvent) {
+    function validateForm(): boolean {
+        const errors: FieldErrors = {};
+
+        if (!form.firstName.trim()) {
+            errors.firstName = "Ime je obavezno.";
+        }
+
+        if (!form.lastName.trim()) {
+            errors.lastName = "Prezime je obavezno.";
+        }
+
+        if (!form.email.trim()) {
+            errors.email = "Email je obavezan.";
+        } else if (
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                form.email
+            )
+        ) {
+            errors.email =
+                "Unesite ispravnu email adresu.";
+        }
+
+        if (!form.password) {
+            errors.password =
+                "Lozinka je obavezna.";
+        } else if (form.password.length < 8) {
+            errors.password =
+                "Lozinka mora imati najmanje 8 karaktera.";
+        }
+
+        if (!form.confirmPassword) {
+            errors.confirmPassword =
+                "Potvrda lozinke je obavezna.";
+        } else if (
+            form.password !== form.confirmPassword
+        ) {
+            errors.confirmPassword =
+                "Lozinke se ne podudaraju.";
+        }
+
+        if (!form.city.trim()) {
+            errors.city = "Grad je obavezan.";
+        }
+
+        if (!form.dateOfBirth) {
+            errors.dateOfBirth =
+                "Datum rođenja je obavezan.";
+        }
+
+        setFieldErrors(errors);
+
+        return Object.keys(errors).length === 0;
+    }
+
+    async function handleSubmit(
+        e: React.FormEvent
+    ) {
         e.preventDefault();
 
         setError("");
 
-        if (form.password !== form.confirmPassword) {
-            setError("Lozinke se ne podudaraju.");
-            return;
-        }
-
-        if (form.password.length < 8) {
-            setError("Lozinka mora imati najmanje 8 karaktera.");
+        if (!validateForm()) {
             return;
         }
 
@@ -62,15 +137,20 @@ export default function RegisterPage() {
                 {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
+                        "Content-Type":
+                            "application/json",
                     },
                     body: JSON.stringify({
-                        firstName: form.firstName,
-                        lastName: form.lastName,
+                        firstName:
+                        form.firstName,
+                        lastName:
+                        form.lastName,
                         email: form.email,
-                        password: form.password,
+                        password:
+                        form.password,
                         city: form.city,
-                        dateOfBirth: form.dateOfBirth,
+                        dateOfBirth:
+                        form.dateOfBirth,
                     }),
                 }
             );
@@ -90,7 +170,9 @@ export default function RegisterPage() {
             // Korisnik će se prijaviti preko Login stranice.
             setRegistrationSuccess(true);
         } catch {
-            setError("Greška pri povezivanju sa serverom.");
+            setError(
+                "Greška pri povezivanju sa serverom."
+            );
         } finally {
             setLoading(false);
         }
@@ -117,6 +199,7 @@ export default function RegisterPage() {
 
                 {/* REGISTER CARD */}
                 <div className="rounded-2xl border border-green-100 bg-white p-8 shadow-xl shadow-green-900/10">
+
                     <div className="mb-8 text-center">
                         <h1 className="text-3xl font-bold text-zinc-900">
                             Kreiraj svoj nalog
@@ -135,10 +218,14 @@ export default function RegisterPage() {
 
                     <form
                         onSubmit={handleSubmit}
+                        noValidate
                         className="flex flex-col gap-5"
                     >
+
                         {/* IME I PREZIME */}
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                            {/* IME */}
                             <div>
                                 <label
                                     htmlFor="firstName"
@@ -156,13 +243,23 @@ export default function RegisterPage() {
                                     type="text"
                                     value={form.firstName}
                                     onChange={handleChange}
-                                    required
                                     maxLength={100}
                                     placeholder="Unesi ime"
-                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className={`w-full rounded-xl border px-4 py-3 text-zinc-900 outline-none transition focus:ring-4 ${
+                                        fieldErrors.firstName
+                                            ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                                            : "border-zinc-200 bg-white focus:border-green-600 focus:ring-green-100"
+                                    }`}
                                 />
+
+                                {fieldErrors.firstName && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {fieldErrors.firstName}
+                                    </p>
+                                )}
                             </div>
 
+                            {/* PREZIME */}
                             <div>
                                 <label
                                     htmlFor="lastName"
@@ -180,11 +277,20 @@ export default function RegisterPage() {
                                     type="text"
                                     value={form.lastName}
                                     onChange={handleChange}
-                                    required
                                     maxLength={100}
                                     placeholder="Unesi prezime"
-                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className={`w-full rounded-xl border px-4 py-3 text-zinc-900 outline-none transition focus:ring-4 ${
+                                        fieldErrors.lastName
+                                            ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                                            : "border-zinc-200 bg-white focus:border-green-600 focus:ring-green-100"
+                                    }`}
                                 />
+
+                                {fieldErrors.lastName && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {fieldErrors.lastName}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -206,15 +312,26 @@ export default function RegisterPage() {
                                 type="email"
                                 value={form.email}
                                 onChange={handleChange}
-                                required
                                 maxLength={255}
                                 placeholder="Unesi svoj email"
-                                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                className={`w-full rounded-xl border px-4 py-3 text-zinc-900 outline-none transition focus:ring-4 ${
+                                    fieldErrors.email
+                                        ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                                        : "border-zinc-200 bg-white focus:border-green-600 focus:ring-green-100"
+                                }`}
                             />
+
+                            {fieldErrors.email && (
+                                <p className="mt-2 text-xs text-red-600">
+                                    {fieldErrors.email}
+                                </p>
+                            )}
                         </div>
 
                         {/* LOZINKE */}
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                            {/* LOZINKA */}
                             <div>
                                 <label
                                     htmlFor="password"
@@ -232,17 +349,26 @@ export default function RegisterPage() {
                                     type="password"
                                     value={form.password}
                                     onChange={handleChange}
-                                    required
-                                    minLength={8}
                                     placeholder="Unesi lozinku"
-                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className={`w-full rounded-xl border px-4 py-3 text-zinc-900 outline-none transition focus:ring-4 ${
+                                        fieldErrors.password
+                                            ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                                            : "border-zinc-200 bg-white focus:border-green-600 focus:ring-green-100"
+                                    }`}
                                 />
 
-                                <p className="mt-2 text-xs text-zinc-500">
-                                    Lozinka mora imati najmanje 8 karaktera.
-                                </p>
+                                {fieldErrors.password ? (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {fieldErrors.password}
+                                    </p>
+                                ) : (
+                                    <p className="mt-2 text-xs text-zinc-500">
+                                        Lozinka mora imati najmanje 8 karaktera.
+                                    </p>
+                                )}
                             </div>
 
+                            {/* POTVRDA LOZINKE */}
                             <div>
                                 <label
                                     htmlFor="confirmPassword"
@@ -260,15 +386,26 @@ export default function RegisterPage() {
                                     type="password"
                                     value={form.confirmPassword}
                                     onChange={handleChange}
-                                    required
                                     placeholder="Ponovi lozinku"
-                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className={`w-full rounded-xl border px-4 py-3 text-zinc-900 outline-none transition focus:ring-4 ${
+                                        fieldErrors.confirmPassword
+                                            ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                                            : "border-zinc-200 bg-white focus:border-green-600 focus:ring-green-100"
+                                    }`}
                                 />
+
+                                {fieldErrors.confirmPassword && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {fieldErrors.confirmPassword}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
                         {/* GRAD I DATUM RODJENJA */}
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                            {/* GRAD */}
                             <div>
                                 <label
                                     htmlFor="city"
@@ -286,13 +423,23 @@ export default function RegisterPage() {
                                     type="text"
                                     value={form.city}
                                     onChange={handleChange}
-                                    required
                                     maxLength={100}
                                     placeholder="Unesi grad"
-                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className={`w-full rounded-xl border px-4 py-3 text-zinc-900 outline-none transition focus:ring-4 ${
+                                        fieldErrors.city
+                                            ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                                            : "border-zinc-200 bg-white focus:border-green-600 focus:ring-green-100"
+                                    }`}
                                 />
+
+                                {fieldErrors.city && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {fieldErrors.city}
+                                    </p>
+                                )}
                             </div>
 
+                            {/* DATUM RODJENJA */}
                             <div>
                                 <label
                                     htmlFor="dateOfBirth"
@@ -310,9 +457,18 @@ export default function RegisterPage() {
                                     type="date"
                                     value={form.dateOfBirth}
                                     onChange={handleChange}
-                                    required
-                                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                    className={`w-full rounded-xl border px-4 py-3 text-zinc-900 outline-none transition focus:ring-4 ${
+                                        fieldErrors.dateOfBirth
+                                            ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                                            : "border-zinc-200 bg-white focus:border-green-600 focus:ring-green-100"
+                                    }`}
                                 />
+
+                                {fieldErrors.dateOfBirth && (
+                                    <p className="mt-2 text-xs text-red-600">
+                                        {fieldErrors.dateOfBirth}
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -326,6 +482,7 @@ export default function RegisterPage() {
                                 ? "Registrovanje..."
                                 : "Registruj se"}
                         </button>
+
                     </form>
 
                     <p className="mt-7 text-center text-sm text-zinc-600">
@@ -337,18 +494,19 @@ export default function RegisterPage() {
                             Prijavi se
                         </Link>
                     </p>
+
                 </div>
 
                 <p className="mt-8 text-center text-sm text-zinc-500">
                     © 2026 BookYourSport
                 </p>
+
             </div>
 
-            {/* ==========================================
-                SUCCESS POPUP
-                ========================================== */}
+            {/* SUCCESS POPUP */}
             {registrationSuccess && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+
                     <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
 
                         {/* SUCCESS ICON */}
@@ -370,7 +528,9 @@ export default function RegisterPage() {
 
                         <button
                             type="button"
-                            onClick={() => router.push("/login")}
+                            onClick={() =>
+                                router.push("/login")
+                            }
                             className="mt-7 w-full rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800"
                         >
                             Prijavi se
@@ -378,14 +538,19 @@ export default function RegisterPage() {
 
                         <button
                             type="button"
-                            onClick={() => router.push("/")}
+                            onClick={() =>
+                                router.push("/")
+                            }
                             className="mt-3 w-full rounded-xl border border-zinc-300 bg-white py-3 font-semibold text-zinc-700 transition hover:bg-zinc-100"
                         >
                             Nazad na početnu
                         </button>
+
                     </div>
+
                 </div>
             )}
+
         </main>
     );
 }

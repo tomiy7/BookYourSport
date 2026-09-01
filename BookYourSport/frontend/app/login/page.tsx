@@ -9,17 +9,18 @@ import {
     getDashboardPath,
 } from "@/lib/user";
 
-
 type LoginForm = {
     email: string;
     password: string;
 };
 
+type FieldErrors = {
+    email?: string;
+    password?: string;
+};
 
 export default function LoginPage() {
-    const router =
-        useRouter();
-
+    const router = useRouter();
 
     const [form, setForm] =
         useState<LoginForm>({
@@ -27,14 +28,14 @@ export default function LoginPage() {
             password: "",
         });
 
+    const [fieldErrors, setFieldErrors] =
+        useState<FieldErrors>({});
 
     const [error, setError] =
         useState("");
 
-
     const [loading, setLoading] =
         useState(false);
-
 
     // ==========================================
     // INPUT CHANGE
@@ -43,13 +44,52 @@ export default function LoginPage() {
     function handleChange(
         e: React.ChangeEvent<HTMLInputElement>
     ) {
+        const {
+            name,
+            value,
+        } = e.target;
+
         setForm({
             ...form,
-            [e.target.name]:
-            e.target.value,
+            [name]: value,
         });
+
+        setFieldErrors((previous) => ({
+            ...previous,
+            [name]: undefined,
+        }));
+
+        setError("");
     }
 
+    // ==========================================
+    // VALIDACIJA
+    // ==========================================
+
+    function validateForm(): boolean {
+        const errors: FieldErrors = {};
+
+        if (!form.email.trim()) {
+            errors.email =
+                "Email je obavezan.";
+        } else if (
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                form.email
+            )
+        ) {
+            errors.email =
+                "Unesite ispravnu email adresu.";
+        }
+
+        if (!form.password) {
+            errors.password =
+                "Lozinka je obavezna.";
+        }
+
+        setFieldErrors(errors);
+
+        return Object.keys(errors).length === 0;
+    }
 
     // ==========================================
     // LOGIN
@@ -61,11 +101,14 @@ export default function LoginPage() {
         e.preventDefault();
 
         setError("");
+
+        if (!validateForm()) {
+            return;
+        }
+
         setLoading(true);
 
-
         try {
-
             // ==========================================
             // LOGIN
             // ==========================================
@@ -87,7 +130,6 @@ export default function LoginPage() {
                     }
                 );
 
-
             let loginData;
 
             try {
@@ -99,31 +141,42 @@ export default function LoginPage() {
                 );
             }
 
-
             if (!loginResponse.ok) {
-
-                setError(
+                const backendMessage =
                     loginData?.message ||
-                    loginData?.detail ||
-                    "Pogrešan email ili lozinka."
-                );
+                    loginData?.detail;
+
+                let message =
+                    "Pogrešan email ili lozinka.";
+
+                if (
+                    backendMessage &&
+                    backendMessage.toLowerCase() ===
+                    "wrong email or password."
+                ) {
+                    message =
+                        "Pogrešan email ili lozinka.";
+                } else if (
+                    backendMessage
+                ) {
+                    message =
+                        backendMessage;
+                }
+
+                setError(message);
 
                 return;
             }
-
 
             // ==========================================
             // PROVERA TOKENA
             // ==========================================
 
             if (!loginData?.accessToken) {
-
                 throw new Error(
                     "Server nije vratio access token."
                 );
-
             }
-
 
             // ==========================================
             // CUVANJE TOKENA
@@ -134,16 +187,12 @@ export default function LoginPage() {
                 loginData.accessToken
             );
 
-
             if (loginData.refreshToken) {
-
                 localStorage.setItem(
                     "refreshToken",
                     loginData.refreshToken
                 );
-
             }
-
 
             // ==========================================
             // DOHVAT STVARNOG USERA
@@ -162,9 +211,7 @@ export default function LoginPage() {
                     }
                 );
 
-
             if (!userResponse.ok) {
-
                 localStorage.removeItem(
                     "accessToken"
                 );
@@ -173,30 +220,23 @@ export default function LoginPage() {
                     "refreshToken"
                 );
 
-
                 throw new Error(
                     "Nije moguće učitati podatke korisnika."
                 );
-
             }
-
 
             const userData =
                 await userResponse.json();
-
 
             // ==========================================
             // PROVERA ROLE
             // ==========================================
 
             if (!userData?.role) {
-
                 throw new Error(
                     "Korisnik nema dodeljenu ulogu."
                 );
-
             }
-
 
             // ==========================================
             // CUVANJE USERA
@@ -209,12 +249,10 @@ export default function LoginPage() {
                 )
             );
 
-
             localStorage.setItem(
                 "firstName",
                 userData.firstName || ""
             );
-
 
             // ==========================================
             // OBAVESTAVAMO HEADER
@@ -226,7 +264,6 @@ export default function LoginPage() {
                 )
             );
 
-
             // ==========================================
             // ROLE BASED REDIRECT
             // ==========================================
@@ -236,50 +273,35 @@ export default function LoginPage() {
                     userData.role
                 );
 
-
             router.replace(
                 dashboardPath
             );
 
-
         } catch (error) {
-
             console.error(
                 "Login error:",
                 error
             );
 
-
-            // Ako je vec Error,
-            // prikazujemo konkretnu poruku.
-
             if (error instanceof Error) {
-
                 setError(
                     error.message
                 );
-
             } else {
-
                 setError(
                     "Greška pri povezivanju sa serverom."
                 );
-
             }
 
         } finally {
-
             setLoading(false);
-
         }
     }
-
 
     return (
         <main className="min-h-screen bg-linear-to-br from-green-50 via-white to-green-100 px-6 py-8">
 
             <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center">
-
 
                 {/* ================================= */}
                 {/* LOGO */}
@@ -289,7 +311,6 @@ export default function LoginPage() {
                     href="/"
                     className="mb-5 flex justify-center"
                 >
-
                     <Image
                         src="/logo.png"
                         alt="BookYourSport"
@@ -298,16 +319,13 @@ export default function LoginPage() {
                         priority
                         className="h-auto w-[180px] object-contain"
                     />
-
                 </Link>
-
 
                 {/* ================================= */}
                 {/* LOGIN CARD */}
                 {/* ================================= */}
 
                 <div className="rounded-2xl border border-green-100 bg-white p-8 shadow-xl shadow-green-900/10">
-
 
                     {/* TITLE */}
 
@@ -317,26 +335,19 @@ export default function LoginPage() {
                             Dobrodošao nazad
                         </h1>
 
-
                         <p className="mt-2 text-sm text-zinc-500">
                             Prijavi se i nastavi na svoj nalog.
                         </p>
 
                     </div>
 
-
-                    {/* ERROR */}
+                    {/* GENERAL ERROR */}
 
                     {error && (
-
                         <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-
                             {error}
-
                         </div>
-
                     )}
-
 
                     {/* FORM */}
 
@@ -344,9 +355,9 @@ export default function LoginPage() {
                         onSubmit={
                             handleSubmit
                         }
+                        noValidate
                         className="flex flex-col gap-5"
                     >
-
 
                         {/* EMAIL */}
 
@@ -361,9 +372,7 @@ export default function LoginPage() {
                                 <span className="ml-1 text-red-500">
                                     *
                                 </span>
-
                             </label>
-
 
                             <input
                                 id="email"
@@ -374,13 +383,21 @@ export default function LoginPage() {
                                     handleChange
                                 }
                                 maxLength={255}
-                                required
                                 placeholder="Unesi svoj email"
-                                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                className={`w-full rounded-xl border px-4 py-3 text-zinc-900 outline-none transition focus:ring-4 ${
+                                    fieldErrors.email
+                                        ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                                        : "border-zinc-200 bg-white focus:border-green-600 focus:ring-green-100"
+                                }`}
                             />
 
-                        </div>
+                            {fieldErrors.email && (
+                                <p className="mt-2 text-xs text-red-600">
+                                    {fieldErrors.email}
+                                </p>
+                            )}
 
+                        </div>
 
                         {/* PASSWORD */}
 
@@ -395,9 +412,7 @@ export default function LoginPage() {
                                 <span className="ml-1 text-red-500">
                                     *
                                 </span>
-
                             </label>
-
 
                             <input
                                 id="password"
@@ -407,13 +422,21 @@ export default function LoginPage() {
                                 onChange={
                                     handleChange
                                 }
-                                required
                                 placeholder="Unesi svoju lozinku"
-                                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                className={`w-full rounded-xl border px-4 py-3 text-zinc-900 outline-none transition focus:ring-4 ${
+                                    fieldErrors.password
+                                        ? "border-red-400 focus:border-red-500 focus:ring-red-100"
+                                        : "border-zinc-200 bg-white focus:border-green-600 focus:ring-green-100"
+                                }`}
                             />
 
-                        </div>
+                            {fieldErrors.password && (
+                                <p className="mt-2 text-xs text-red-600">
+                                    {fieldErrors.password}
+                                </p>
+                            )}
 
+                        </div>
 
                         {/* SUBMIT */}
 
@@ -424,15 +447,12 @@ export default function LoginPage() {
                             }
                             className="mt-2 rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-
                             {loading
                                 ? "Prijavljivanje..."
                                 : "Prijavi se"}
-
                         </button>
 
                     </form>
-
 
                     {/* REGISTER */}
 
@@ -450,7 +470,6 @@ export default function LoginPage() {
                     </p>
 
                 </div>
-
 
                 <p className="mt-6 text-center text-sm text-zinc-500">
                     © 2026 BookYourSport
