@@ -84,12 +84,21 @@ export default function RegisterPage() {
                 return;
             }
 
-            localStorage.setItem("accessToken", data.accessToken);
-            localStorage.setItem("refreshToken", data.refreshToken);
+            localStorage.setItem(
+                "accessToken",
+                data.accessToken
+            );
 
-            window.dispatchEvent(new Event("auth-change"));
+            localStorage.setItem(
+                "refreshToken",
+                data.refreshToken
+            );
 
-            router.push("/player-dashboard");
+            window.dispatchEvent(
+                new Event("auth-change")
+            );
+
+            router.push("/");
         } catch {
             setError("Greška pri povezivanju sa serverom.");
         } finally {
