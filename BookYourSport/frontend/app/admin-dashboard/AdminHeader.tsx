@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function AdminHeader() {
     const pathname = usePathname();
+    const router = useRouter();
 
     function navClass(path: string) {
         const isActive =
@@ -15,8 +16,19 @@ export default function AdminHeader() {
         return `text-sm font-medium transition ${
             isActive
                 ? "font-bold text-green-700"
-                : "text-zinc-600 hover:text-green-700"
+                : "text-green-700 hover:text-green-800"
         }`;
+    }
+
+    function handleLogout() {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("firstName");
+
+        window.dispatchEvent(new Event("auth-change"));
+
+        router.push("/login");
     }
 
     return (
@@ -40,9 +52,12 @@ export default function AdminHeader() {
 
                 {/* ADMIN NAVIGACIJA */}
                 <nav className="flex items-center gap-6">
+
                     <Link
                         href="/admin-dashboard"
-                        className={navClass("/admin-dashboard")}
+                        className={navClass(
+                            "/admin-dashboard"
+                        )}
                     >
                         Dashboard
                     </Link>
@@ -64,6 +79,16 @@ export default function AdminHeader() {
                     >
                         Korisnici
                     </Link>
+
+                    {/* LOGOUT */}
+                    <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="text-sm font-medium text-red-600 transition hover:text-red-700"
+                    >
+                        Odjavi se
+                    </button>
+
                 </nav>
             </div>
         </header>

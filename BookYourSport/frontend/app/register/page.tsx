@@ -30,6 +30,7 @@ export default function RegisterPage() {
 
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
         setForm({
@@ -84,21 +85,10 @@ export default function RegisterPage() {
                 return;
             }
 
-            localStorage.setItem(
-                "accessToken",
-                data.accessToken
-            );
-
-            localStorage.setItem(
-                "refreshToken",
-                data.refreshToken
-            );
-
-            window.dispatchEvent(
-                new Event("auth-change")
-            );
-
-            router.push("/");
+            // Registracija je uspešna.
+            // Ne prijavljujemo korisnika automatski.
+            // Korisnik će se prijaviti preko Login stranice.
+            setRegistrationSuccess(true);
         } catch {
             setError("Greška pri povezivanju sa serverom.");
         } finally {
@@ -353,6 +343,49 @@ export default function RegisterPage() {
                     © 2026 BookYourSport
                 </p>
             </div>
+
+            {/* ==========================================
+                SUCCESS POPUP
+                ========================================== */}
+            {registrationSuccess && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                    <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
+
+                        {/* SUCCESS ICON */}
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                            <span className="text-3xl text-green-700">
+                                ✓
+                            </span>
+                        </div>
+
+                        <h2 className="mt-6 text-2xl font-bold text-zinc-900">
+                            Uspešna registracija!
+                        </h2>
+
+                        <p className="mt-3 leading-6 text-zinc-600">
+                            Tvoj nalog je uspešno kreiran.
+                            <br />
+                            Sada možeš da se prijaviš na svoj nalog.
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() => router.push("/login")}
+                            className="mt-7 w-full rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800"
+                        >
+                            Prijavi se
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => router.push("/")}
+                            className="mt-3 w-full rounded-xl border border-zinc-300 bg-white py-3 font-semibold text-zinc-700 transition hover:bg-zinc-100"
+                        >
+                            Nazad na početnu
+                        </button>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Messaging.Interfaces;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -25,28 +26,69 @@ using PaymentService.Infrastructure.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 var jwtSecret = builder.Configuration["Jwt:Secret"]
-                ?? throw new InvalidOperationException("Jwt:Secret is not configured.");
+                ?? throw new InvalidOperationException(
+                    "Jwt:Secret is not configured.");
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
+
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(jwtSecret)),
+
             ValidateIssuer = false,
-            ValidateAudience = false
+            ValidateAudience = false,
+
+            // Explicitly tell ASP.NET which claim represents
+            // the authenticated user's ID.
+            NameClaimType = ClaimTypes.NameIdentifier,
+
+            // Explicitly tell ASP.NET which claim represents
+            // the user's role.
+            RoleClaimType = ClaimTypes.Role
+        };
+
+        // Temporary diagnostic logging for JWT authentication.
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine(
+                    $"JWT AUTH FAILED: {context.Exception.Message}");
+
+                return Task.CompletedTask;
+            },
+
+            OnTokenValidated = context =>
+            {
+                var userId = context.Principal?
+                    .FindFirst(ClaimTypes.NameIdentifier)?
+                    .Value;
+
+                Console.WriteLine(
+                    $"JWT VALIDATED: {userId}");
+
+                return Task.CompletedTask;
+            }
         };
     });
+
 builder.Services.AddHostedService<OutboxProcessor>();
+
 builder.Services.AddAuthorization();
 
 // CORS - allow frontend to communicate with Payment API
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
 
 QuestPDF.Settings.License =
@@ -55,45 +97,68 @@ QuestPDF.Settings.License =
 builder.Services.AddControllers();
 
 builder.Services.AddOpenApi();
+
 builder.Services.AddSwaggerGen(options =>
 {
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        Description = "JWT Authorization header using the Bearer scheme."
-    });
+    options.AddSecurityDefinition(
+        "Bearer",
+        new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            Description =
+                "JWT Authorization header using the Bearer scheme."
+        });
 
     options.AddSecurityRequirement(document =>
         new OpenApiSecurityRequirement
         {
-            [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+            [new OpenApiSecuritySchemeReference(
+                "Bearer",
+                document)] = []
         });
 });
 
 // Register payment and credit account services.
-builder.Services.AddScoped<IPaymentProcessor, MockPaymentProcessor>();
-builder.Services.AddScoped<ICreditAccountRepository, CreditAccountRepository>();
+builder.Services.AddScoped<
+    IPaymentProcessor,
+    MockPaymentProcessor>();
 
-builder.Services.AddScoped<TopUpCreditHandler>();
-builder.Services.AddScoped<ChargeCreditHandler>();
-builder.Services.AddScoped<RefundCreditHandler>();
-builder.Services.AddScoped<RefundPolicy>();
+builder.Services.AddScoped<
+    ICreditAccountRepository,
+    CreditAccountRepository>();
+
+builder.Services.AddScoped<
+    TopUpCreditHandler>();
+
+builder.Services.AddScoped<
+    ChargeCreditHandler>();
+
+builder.Services.AddScoped<
+    RefundCreditHandler>();
+
+builder.Services.AddScoped<
+    RefundPolicy>();
 
 // Configure the Payment Service database.
 builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseNpgsql(
-        builder.Configuration.GetConnectionString("PaymentDb")));
+        builder.Configuration.GetConnectionString(
+            "PaymentDb")));
 
 // Configure communication with Auth Service.
-builder.Services.AddHttpClient<IAuthServiceClient, AuthServiceClient>(client =>
+builder.Services.AddHttpClient<
+    IAuthServiceClient,
+    AuthServiceClient>(client =>
 {
     client.BaseAddress = new Uri(
-        builder.Configuration["AuthService:BaseUrl"]!);
+        builder.Configuration[
+            "AuthService:BaseUrl"]!);
 });
 
-builder.Services.AddScoped<PaySubscriptionHandler>();
+builder.Services.AddScoped<
+    PaySubscriptionHandler>();
 
 // Register contract generation and persistence services.
 builder.Services.AddScoped<
@@ -104,11 +169,23 @@ builder.Services.AddScoped<
     IContractRepository,
     ContractRepository>();
 
-builder.Services.AddScoped<GenerateContractHandler>();
-builder.Services.AddScoped<SignContractHandler>();
-builder.Services.AddScoped<IEventPublisher, RabbitMqEventPublisher>();
-builder.Services.AddScoped<IOutboxWriter, OutboxWriter>();
-builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddScoped<
+    GenerateContractHandler>();
+
+builder.Services.AddScoped<
+    SignContractHandler>();
+
+builder.Services.AddScoped<
+    IEventPublisher,
+    RabbitMqEventPublisher>();
+
+builder.Services.AddScoped<
+    IOutboxWriter,
+    OutboxWriter>();
+
+builder.Services.AddExceptionHandler<
+    GlobalExceptionHandler>();
+
 builder.Services.AddProblemDetails();
 
 
@@ -125,10 +202,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
 app.UseHttpsRedirection();
+
 app.UseCors("AllowAll");
+
 app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();

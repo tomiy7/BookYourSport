@@ -9,34 +9,53 @@ public class ContractRepository : IContractRepository
 {
     private readonly PaymentDbContext _dbContext;
 
-    public ContractRepository(PaymentDbContext dbContext)
+    public ContractRepository(
+        PaymentDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
-    // Adds a new contract to the database context.
-    public async Task AddAsync(Contract contract)
+    public async Task AddAsync(
+        Contract contract)
     {
-        await _dbContext.Contracts.AddAsync(contract);
+        await _dbContext.Contracts.AddAsync(
+            contract);
     }
 
-    // Retrieves a contract by its unique identifier.
-    public async Task<Contract?> GetByIdAsync(Guid contractId)
+    public async Task<Contract?> GetByIdAsync(
+        Guid contractId)
     {
         return await _dbContext.Contracts
-            .FirstOrDefaultAsync(x => x.Id == contractId);
+            .FirstOrDefaultAsync(
+                x => x.Id == contractId);
     }
 
-    // Persists pending changes to the database.
+    public async Task<Contract?> GetByUserIdAsync(
+        Guid userId)
+    {
+        return await _dbContext.Contracts
+            .Where(x => x.UserId == userId)
+            .OrderByDescending(
+                x => x.Status == ContractStatus.Signed)
+            .ThenByDescending(
+                x => x.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<Contract?> GetSignedByUserIdAsync(
+        Guid userId)
+    {
+        return await _dbContext.Contracts
+            .Where(x =>
+                x.UserId == userId &&
+                x.Status == ContractStatus.Signed)
+            .OrderByDescending(
+                x => x.CreatedAt)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task SaveChangesAsync()
     {
         await _dbContext.SaveChangesAsync();
-    }
-
-    // Retrieves the contract belonging to a specific user.
-    public async Task<Contract?> GetByUserIdAsync(Guid userId)
-    {
-        return await _dbContext.Contracts
-            .FirstOrDefaultAsync(x => x.UserId == userId);
     }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import Header from "../Header";
@@ -88,6 +88,7 @@ function TopUpModal({
         const token = getAccessToken();
 
         if (!token) {
+            setLoadingBalance(false);
             return;
         }
 
@@ -96,7 +97,9 @@ function TopUpModal({
                 setBalance(wallet.balance);
                 setCurrency(wallet.currency);
             })
-            .catch(() => setError("Nije moguće učitati trenutno stanje."))
+            .catch(() =>
+                setError("Nije moguće učitati trenutno stanje.")
+            )
             .finally(() => setLoadingBalance(false));
     }, []);
 
@@ -123,7 +126,9 @@ function TopUpModal({
             onSuccess();
         } catch (err) {
             setError(
-                err instanceof Error ? err.message : "Uplata nije uspela."
+                err instanceof Error
+                    ? err.message
+                    : "Uplata nije uspela."
             );
             setSubmitting(false);
         }
@@ -203,10 +208,10 @@ function TopUpModal({
 }
 
 // ==========================================
-// PAYMENT PAGE
+// PAYMENT PAGE CONTENT
 // ==========================================
 
-export default function PaymentPage() {
+function PaymentPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -621,5 +626,27 @@ export default function PaymentPage() {
 
             <Footer />
         </main>
+    );
+}
+
+// ==========================================
+// PAYMENT PAGE
+// Suspense je potreban zbog useSearchParams()
+// u Next.js production buildu.
+// ==========================================
+
+export default function PaymentPage() {
+    return (
+        <Suspense
+            fallback={
+                <main className="min-h-screen bg-zinc-50">
+                    <div className="flex min-h-screen items-center justify-center">
+                        Učitavanje...
+                    </div>
+                </main>
+            }
+        >
+            <PaymentPageContent />
+        </Suspense>
     );
 }

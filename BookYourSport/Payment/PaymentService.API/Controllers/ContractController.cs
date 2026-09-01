@@ -32,6 +32,32 @@ public class ContractController : ControllerBase
     public async Task<IActionResult> GenerateContract(
         GenerateContractCommand command)
     {
+        // Do not generate another contract if one already exists.
+        var existingContract =
+            await _contractRepository.GetByUserIdAsync(
+                command.UserId);
+
+        if (existingContract != null)
+        {
+            return Ok(new
+            {
+                contractId = existingContract.Id,
+                userId = existingContract.UserId,
+                documentPath = existingContract.DocumentPath,
+
+                status =
+                    existingContract.Status.ToString(),
+
+                createdAt = existingContract.CreatedAt,
+                signedAt = existingContract.SignedAt
+            });
+        }
+
+        if (string.IsNullOrWhiteSpace(command.Currency))
+        {
+            command.Currency = "RSD";
+        }
+
         var contract =
             await _handler.Handle(command);
 

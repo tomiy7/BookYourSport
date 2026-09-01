@@ -1,6 +1,5 @@
 import { getAccessToken } from "@/lib/auth";
 
-
 export interface StoredUser {
     id: string;
 
@@ -84,7 +83,7 @@ export function getDashboardPath(
 
     switch (
         normalizedRole
-    ) {
+        ) {
 
         case "admin":
             return "/admin-dashboard";
@@ -111,11 +110,41 @@ export function getDashboardPath(
 export async function refreshCurrentUser():
     Promise<StoredUser> {
 
-    const token =
-        getAccessToken();
+    if (
+        typeof window ===
+        "undefined"
+    ) {
+        throw new Error(
+            "Ova funkcija mora da se izvršava u browseru."
+        );
+    }
 
 
-    if (!token) {
+    const apiUrl =
+        process.env
+            .NEXT_PUBLIC_API_URL;
+
+
+    if (!apiUrl) {
+
+        throw new Error(
+            "NEXT_PUBLIC_API_URL nije podešen."
+        );
+
+    }
+
+
+    // ==========================================
+    // 1. UZMI REFRESH TOKEN
+    // ==========================================
+
+    const refreshToken =
+        localStorage.getItem(
+            "refreshToken"
+        );
+
+
+    if (!refreshToken) {
 
         throw new Error(
             "Niste prijavljeni."
@@ -124,15 +153,91 @@ export async function refreshCurrentUser():
     }
 
 
+    // ==========================================
+    // 2. OSVEŽI TOKENE
+    // ==========================================
+
+    const refreshResponse =
+        await fetch(
+            `${apiUrl}/auth/refresh`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json",
+                },
+
+                body:
+                    JSON.stringify({
+                        refreshToken,
+                    }),
+            }
+        );
+
+
+    if (!refreshResponse.ok) {
+
+        // Refresh token više nije validan.
+        // Brišemo lokalnu sesiju.
+
+        localStorage.removeItem(
+            "accessToken"
+        );
+
+        localStorage.removeItem(
+            "refreshToken"
+        );
+
+        localStorage.removeItem(
+            "user"
+        );
+
+        localStorage.removeItem(
+            "firstName"
+        );
+
+
+        throw new Error(
+            "Sesija je istekla. Potrebno je ponovo se prijaviti."
+        );
+
+    }
+
+
+    const tokens =
+        await refreshResponse.json();
+
+
+    // ==========================================
+    // 3. SAČUVAJ NOVE TOKENE
+    // ==========================================
+
+    localStorage.setItem(
+        "accessToken",
+        tokens.accessToken
+    );
+
+
+    localStorage.setItem(
+        "refreshToken",
+        tokens.refreshToken
+    );
+
+
+    // ==========================================
+    // 4. UČITAJ NAJNOVIJE PODATKE USER-A
+    // ==========================================
+
     const response =
         await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
+            `${apiUrl}/auth/me`,
             {
                 method: "GET",
 
                 headers: {
                     Authorization:
-                        `Bearer ${token}`,
+                        `Bearer ${tokens.accessToken}`,
                 },
             }
         );
@@ -176,7 +281,7 @@ export async function refreshCurrentUser():
 
 
     // ==========================================
-    // UPDATE LOCAL STORAGE
+    // 5. UPDATE LOCAL STORAGE
     // ==========================================
 
     localStorage.setItem(
@@ -195,7 +300,7 @@ export async function refreshCurrentUser():
 
 
     // ==========================================
-    // NOTIFY HEADER
+    // 6. NOTIFY HEADER
     // ==========================================
 
     window.dispatchEvent(

@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5435:5432"
+      - "5434:5432"
     networks:
       - backend
 
@@ -26,7 +26,7 @@ services:
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=guest
       - RabbitMQ__Password=guest
-      - Jwt__Secret=${JWT_SECRET}
+      - Jwt__Secret= ${JWT_SECRET} #MyVeryLongBookYourSportJwtSecretKey2026Secure
       - AuthService__BaseUrl=http://auth_api:8080
     networks:
       - backend
