@@ -5,5 +5,7 @@ public interface IPdfContractGenerator
     Task<string> GenerateContractAsync(
         Guid userId,
         string firstName,
-        string lastName);
+        string lastName,
+        decimal amount,
+        string currency);
 }
