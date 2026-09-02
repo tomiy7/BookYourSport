@@ -1,4 +1,0 @@
-var searchData=
-[
-  ['workinghours_0',['workinghours',['../classSearchService_1_1Application_1_1DTOs_1_1ReservationClubDto.html#a9ffc0c2b8a5aa17e733cb57902718630',1,'SearchService.Application.DTOs.ReservationClubDto.WorkingHours'],['../classReservationService_1_1API_1_1Grpc_1_1ClubMessage.html#ab8a10c40f0b99c92ac543dac8c022cfc',1,'ReservationService.API.Grpc.ClubMessage.WorkingHours'],['../classReservationService_1_1Application_1_1DTOs_1_1ClubDto.html#a2479505ddd30c2c1991e888284c2b98a',1,'ReservationService.Application.DTOs.ClubDto.WorkingHours'],['../classReservationService_1_1Application_1_1DTOs_1_1CreateClubDto.html#ad75e8d266c4ce0819650e5d719231979',1,'ReservationService.Application.DTOs.CreateClubDto.WorkingHours'],['../classReservationService_1_1Domain_1_1Entities_1_1TennisClub.html#acc6b0368c68ec8852443bf57af661d71',1,'ReservationService.Domain.Entities.TennisClub.WorkingHours']]]
-];
