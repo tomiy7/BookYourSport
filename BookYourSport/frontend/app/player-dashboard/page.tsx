@@ -1401,21 +1401,6 @@ export default function PlayerDashboard() {
                                 Dodaj kredit
                             </button>
 
-
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.stopPropagation();
-
-                                    router.push(
-                                        "/player-dashboard/wallet"
-                                    );
-                                }}
-                                className="rounded-lg border border-green-700 px-5 py-3 text-sm font-semibold text-green-800 transition hover:bg-green-50 sm:min-w-[220px]"
-                            >
-                                Pogledaj stanje na računu
-                            </button>
-
                         </div>
 
                     </div>
