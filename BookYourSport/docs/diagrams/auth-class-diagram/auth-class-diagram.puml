@@ -1,0 +1,131 @@
+@startuml
+title BookYourSport - Auth Subsystem Class Diagram
+
+left to right direction
+
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 45
+
+skinparam defaultFontSize 13
+skinparam ArrowFontSize 12
+
+skinparam class {
+    BorderColor #555555
+    FontColor #222222
+    BackgroundColor #FFFFFF
+    ArrowColor #555555
+}
+
+skinparam package {
+    BorderColor #888888
+    FontColor #333333
+}
+
+package "Domain" #E8F5E9 {
+
+    class User {
+        +Id : Guid
+        +FirstName : string
+        +LastName : string
+        +Email : string
+        +City : string
+        +DateOfBirth : DateOnly
+        +Role : string
+        +ApprovalStatus : string
+        +ContractStatus : string
+        +SubscriptionStatus : string
+    }
+
+    class RefreshToken {
+        +Id : Guid
+        +UserId : Guid
+        +Token : string
+        +ExpiresAt : DateTime
+        +RevokedAt : DateTime?
+    }
+}
+
+package "Application / API" #FFF3CD {
+
+    class AuthController {
+        +RegisterAsync(...)
+        +LoginAsync(...)
+        +RefreshAsync(...)
+        +LogoutAsync(...)
+        +GetUsersAsync(...)
+        +GetUserByIdAsync(...)
+        +UpdateUserRoleAsync(...)
+        +UpdateApprovalStatusAsync(...)
+        +RequestClubOwnershipAsync(...)
+        +ContractGeneratedAsync(...)
+        +ContractSignedAsync(...)
+        +SubscriptionPaidAsync(...)
+    }
+
+    interface IUserRepository {
+        +GetUserByIdAsync(id : Guid)
+        +GetUserByEmailAsync(email : string)
+        +AddUserAsync(user : User)
+        +UpdateUserAsync(user : User)
+    }
+
+    interface IRefreshTokenRepository {
+        +GetAsync(...)
+        +AddAsync(...)
+        +UpdateAsync(...)
+    }
+
+    interface ITokenService {
+        +GenerateAccessToken(user : User) : string
+        +GenerateRefreshToken() : string
+    }
+}
+
+package "Infrastructure" #E3F2FD {
+
+    class UserRepository {
+        +GetUserByIdAsync(id : Guid)
+        +GetUserByEmailAsync(email : string)
+        +AddUserAsync(user : User)
+        +UpdateUserAsync(user : User)
+    }
+
+    class RefreshTokenRepository {
+        +GetAsync(...)
+        +AddAsync(...)
+        +UpdateAsync(...)
+    }
+
+    class JwtTokenService {
+        +GenerateAccessToken(user : User) : string
+        +GenerateRefreshToken() : string
+    }
+
+    class AppDbContext {
+        +Users
+        +RefreshTokens
+        +SaveChangesAsync(...)
+    }
+}
+
+User "1" -- "0..*" RefreshToken
+
+AuthController --> IUserRepository
+AuthController --> IRefreshTokenRepository
+AuthController --> ITokenService
+
+IUserRepository --> User
+IRefreshTokenRepository --> RefreshToken
+ITokenService --> User
+
+UserRepository ..|> IUserRepository
+RefreshTokenRepository ..|> IRefreshTokenRepository
+JwtTokenService ..|> ITokenService
+
+UserRepository --> AppDbContext
+RefreshTokenRepository --> AppDbContext
+
+@enduml
