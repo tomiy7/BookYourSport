@@ -18,6 +18,10 @@ import {
     getAccessToken,
 } from "@/lib/auth";
 
+import {
+    apiFetch,
+} from "@/lib/api";
+
 
 type OwnerRequest = {
     id: string;
@@ -70,35 +74,7 @@ export default function OwnerRequestsPage() {
     // LOAD REQUESTS
     // ==========================================
 
-    useEffect(() => {
-
-        const token =
-            getAccessToken();
-
-
-        if (!token) {
-
-            router.replace(
-                "/login"
-            );
-
-            return;
-
-        }
-
-
-        loadRequests(
-            token
-        );
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-
-    }, []);
-
-
-    async function loadRequests(
-        token: string
-    ) {
+    async function loadRequests() {
 
         try {
 
@@ -108,13 +84,10 @@ export default function OwnerRequestsPage() {
 
 
             const response =
-                await fetch(
+                await apiFetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/auth/admin/pending-approvals`,
                     {
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`,
-                        },
+                        method: "GET",
                     }
                 );
 
@@ -158,6 +131,30 @@ export default function OwnerRequestsPage() {
     }
 
 
+    useEffect(() => {
+
+        const token =
+            getAccessToken();
+
+
+        if (!token) {
+
+            router.replace(
+                "/login"
+            );
+
+            return;
+
+        }
+
+
+        loadRequests();
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    }, []);
+
+
     // ==========================================
     // UPDATE STATUS
     // ==========================================
@@ -197,18 +194,10 @@ export default function OwnerRequestsPage() {
 
 
             const response =
-                await fetch(
+                await apiFetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/auth/users/${userId}/approval-status`,
                     {
                         method: "PATCH",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-
-                            Authorization:
-                                `Bearer ${token}`,
-                        },
 
                         body: JSON.stringify({
                             approvalStatus,

@@ -1,3 +1,5 @@
+import { apiFetch } from "./api";
+
 export type Address = {
     city: string;
     municipality?: string;
@@ -65,13 +67,6 @@ if (!API_URL) {
     throw new Error(
         "NEXT_PUBLIC_API_URL nije podešen."
     );
-}
-
-function authHeaders(token: string) {
-    return {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-    };
 }
 
 async function readJsonOrThrow(
@@ -145,14 +140,12 @@ export async function createReservation(
     clubId: string,
     courtId: string,
     startTime: string,
-    endTime: string,
-    token: string
+    endTime: string
 ): Promise<Reservation> {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API_URL}/reservation/api/clubs/${clubId}/courts/${courtId}/reservations`,
         {
             method: "POST",
-            headers: authHeaders(token),
             body: JSON.stringify({
                 startTime,
                 endTime,
@@ -167,13 +160,12 @@ export async function createReservation(
 }
 
 export async function getMyReservations(
-    userId: string,
-    token: string
+    userId: string
 ): Promise<Reservation[]> {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API_URL}/reservation/api/reservations/user/${userId}`,
         {
-            headers: authHeaders(token),
+            method: "GET",
         }
     );
 
@@ -187,14 +179,12 @@ export async function getMyReservations(
 }
 
 export async function cancelReservation(
-    reservationId: string,
-    token: string
+    reservationId: string
 ): Promise<void> {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API_URL}/reservation/api/reservations/${reservationId}/cancel`,
         {
             method: "PUT",
-            headers: authHeaders(token),
         }
     );
 
@@ -233,14 +223,12 @@ export type CreateClubPayload = {
 };
 
 export async function createClub(
-    payload: CreateClubPayload,
-    token: string
+    payload: CreateClubPayload
 ): Promise<Club> {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API_URL}/reservation/api/clubs`,
         {
             method: "POST",
-            headers: authHeaders(token),
             body: JSON.stringify(payload),
         }
     );
@@ -268,14 +256,12 @@ export type UpdateClubPayload = {
 
 export async function updateClub(
     clubId: string,
-    payload: UpdateClubPayload,
-    token: string
+    payload: UpdateClubPayload
 ): Promise<Club> {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API_URL}/reservation/api/clubs/${clubId}`,
         {
             method: "PUT",
-            headers: authHeaders(token),
             body: JSON.stringify(payload),
         }
     );
@@ -300,14 +286,12 @@ export type CourtPayload = {
 
 export async function createCourt(
     clubId: string,
-    payload: CourtPayload,
-    token: string
+    payload: CourtPayload
 ): Promise<Court> {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API_URL}/reservation/api/clubs/${clubId}/courts`,
         {
             method: "POST",
-            headers: authHeaders(token),
             body: JSON.stringify(payload),
         }
     );
@@ -321,14 +305,12 @@ export async function createCourt(
 export async function updateCourt(
     clubId: string,
     courtId: string,
-    payload: CourtPayload & { isActive: boolean },
-    token: string
+    payload: CourtPayload & { isActive: boolean }
 ): Promise<Court> {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API_URL}/reservation/api/clubs/${clubId}/courts/${courtId}`,
         {
             method: "PUT",
-            headers: authHeaders(token),
             body: JSON.stringify(payload),
         }
     );
@@ -341,14 +323,12 @@ export async function updateCourt(
 
 export async function deleteCourt(
     clubId: string,
-    courtId: string,
-    token: string
+    courtId: string
 ): Promise<void> {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API_URL}/reservation/api/clubs/${clubId}/courts/${courtId}`,
         {
             method: "DELETE",
-            headers: authHeaders(token),
         }
     );
 
@@ -366,13 +346,12 @@ export async function deleteCourt(
 // ==========================================
 
 export async function getClubReservations(
-    clubId: string,
-    token: string
+    clubId: string
 ): Promise<Reservation[]> {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API_URL}/reservation/api/reservations/club/${clubId}`,
         {
-            headers: authHeaders(token),
+            method: "GET",
         }
     );
 

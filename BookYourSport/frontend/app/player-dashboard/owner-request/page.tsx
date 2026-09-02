@@ -7,6 +7,7 @@ import Link from "next/link";
 import PlayerHeader from "../PlayerHeader";
 import Footer from "../../Footer";
 import { getAccessToken } from "@/lib/auth";
+import { apiFetch } from "@/lib/api";
 
 export default function OwnerRequestPage() {
     const router = useRouter();
@@ -29,13 +30,10 @@ export default function OwnerRequestPage() {
             setError("");
             setMessage("");
 
-            const response = await fetch(
+            const response = await apiFetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/auth/request-club-ownership`,
                 {
                     method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
                 }
             );
 
@@ -52,7 +50,8 @@ export default function OwnerRequestPage() {
                         data.title ||
                         errorMessage;
                 } catch {
-                    // Ako backend ne vrati JSON, ostavljamo podrazumevanu poruku.
+                    // Ako backend ne vrati JSON,
+                    // ostavljamo podrazumevanu poruku.
                 }
 
                 throw new Error(errorMessage);

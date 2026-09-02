@@ -113,8 +113,7 @@ export default function CreateClubPage() {
 
         try {
             await createClub(
-                { ...form, workingHours: workingHoursPayload },
-                token
+                { ...form, workingHours: workingHoursPayload }
             );
             router.push("/club-owner-dashboard");
         } catch (err) {

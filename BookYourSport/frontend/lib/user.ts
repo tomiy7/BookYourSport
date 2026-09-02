@@ -1,4 +1,4 @@
-import { getAccessToken } from "@/lib/auth";
+import { apiFetch } from "@/lib/api";
 
 export interface StoredUser {
     id: string;
@@ -135,51 +135,33 @@ export async function refreshCurrentUser():
 
 
     // ==========================================
-    // 1. UZMI REFRESH TOKEN
+    // UČITAJ NAJNOVIJE PODATKE USER-A
+    //
+    // Napomena: NE radimo ovde sopstveni
+    // /auth/refresh poziv. apiFetch već sam
+    // radi refresh (i to samo ako dobije 401,
+    // preko istog deljenog refreshPromise-a
+    // iz lib/auth.ts). Da smo ovde ručno zvali
+    // /auth/refresh, dobili bismo DVA nezavisna
+    // refresh mehanizma koja se utrkuju za isti
+    // (rotirajući) refresh token - to je bilo
+    // uzrok bug-a.
     // ==========================================
 
-    const refreshToken =
-        localStorage.getItem(
-            "refreshToken"
-        );
-
-
-    if (!refreshToken) {
-
-        throw new Error(
-            "Niste prijavljeni."
-        );
-
-    }
-
-
-    // ==========================================
-    // 2. OSVEŽI TOKENE
-    // ==========================================
-
-    const refreshResponse =
-        await fetch(
-            `${apiUrl}/auth/refresh`,
+    const response =
+        await apiFetch(
+            `${apiUrl}/auth/me`,
             {
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json",
-                },
-
-                body:
-                    JSON.stringify({
-                        refreshToken,
-                    }),
+                method: "GET",
             }
         );
 
 
-    if (!refreshResponse.ok) {
+    if (!response.ok) {
 
-        // Refresh token više nije validan.
-        // Brišemo lokalnu sesiju.
+        // apiFetch je već pokušao refresh interno.
+        // Ako smo i dalje ovde sa ne-ok odgovorom,
+        // sesija je zaista nevalidna - čistimo je.
 
         localStorage.removeItem(
             "accessToken"
@@ -197,80 +179,8 @@ export async function refreshCurrentUser():
             "firstName"
         );
 
-
         throw new Error(
             "Sesija je istekla. Potrebno je ponovo se prijaviti."
-        );
-
-    }
-
-
-    const tokens =
-        await refreshResponse.json();
-
-
-    // ==========================================
-    // 3. SAČUVAJ NOVE TOKENE
-    // ==========================================
-
-    localStorage.setItem(
-        "accessToken",
-        tokens.accessToken
-    );
-
-
-    localStorage.setItem(
-        "refreshToken",
-        tokens.refreshToken
-    );
-
-
-    // ==========================================
-    // 4. UČITAJ NAJNOVIJE PODATKE USER-A
-    // ==========================================
-
-    const response =
-        await fetch(
-            `${apiUrl}/auth/me`,
-            {
-                method: "GET",
-
-                headers: {
-                    Authorization:
-                        `Bearer ${tokens.accessToken}`,
-                },
-            }
-        );
-
-
-    if (!response.ok) {
-
-        if (
-            response.status ===
-            401
-        ) {
-
-            localStorage.removeItem(
-                "accessToken"
-            );
-
-            localStorage.removeItem(
-                "refreshToken"
-            );
-
-            localStorage.removeItem(
-                "user"
-            );
-
-            localStorage.removeItem(
-                "firstName"
-            );
-
-        }
-
-
-        throw new Error(
-            "Nije moguće učitati podatke korisnika."
         );
 
     }
@@ -281,7 +191,7 @@ export async function refreshCurrentUser():
 
 
     // ==========================================
-    // 5. UPDATE LOCAL STORAGE
+    // UPDATE LOCAL STORAGE
     // ==========================================
 
     localStorage.setItem(
@@ -300,7 +210,7 @@ export async function refreshCurrentUser():
 
 
     // ==========================================
-    // 6. NOTIFY HEADER
+    // NOTIFY HEADER
     // ==========================================
 
     window.dispatchEvent(

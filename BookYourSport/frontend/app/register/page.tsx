@@ -158,10 +158,23 @@ export default function RegisterPage() {
             const data = await res.json();
 
             if (!res.ok) {
-                setError(
+                const backendMessage =
                     data.message ||
-                    "Došlo je do greške prilikom registracije."
-                );
+                    data.detail;
+
+                let message =
+                    "Došlo je do greške prilikom registracije.";
+
+                if (
+                    backendMessage?.toLowerCase() ===
+                    "email already exists"
+                ) {
+                    message = "Email već postoji.";
+                } else if (backendMessage) {
+                    message = backendMessage;
+                }
+
+                setError(message);
                 return;
             }
 

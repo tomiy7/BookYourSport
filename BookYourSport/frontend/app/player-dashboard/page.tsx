@@ -141,7 +141,7 @@ function TopUpModal({
             return;
         }
 
-        getBalance(token)
+        getBalance()
             .then((wallet) => {
                 setBalance(wallet.balance);
                 setCurrency(wallet.currency);
@@ -183,7 +183,6 @@ function TopUpModal({
 
             await topUp(
                 numericAmount,
-                token,
                 currency
             );
 
@@ -496,9 +495,7 @@ export default function PlayerDashboard() {
 
 
                 const wallet =
-                    await getBalance(
-                        token
-                    );
+                    await getBalance();
 
 
                 setBalance(
@@ -1676,10 +1673,10 @@ export default function PlayerDashboard() {
                     </div>
 
                 </section>
-                
 
 
-        </section>
+
+            </section>
 
             {showTopUpModal && (
                 <TopUpModal

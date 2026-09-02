@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import PlayerHeader from "../../../PlayerHeader";
 import Footer from "../../../../Footer";
+import { apiFetch } from "@/lib/api";
 
 type Price = {
     amount: number;
@@ -34,20 +35,6 @@ type User = {
     lastName?: string;
     email?: string;
 };
-
-function getAuthHeaders() {
-    const accessToken =
-        localStorage.getItem("accessToken");
-
-    return {
-        "Content-Type": "application/json",
-        ...(accessToken
-            ? {
-                Authorization: `Bearer ${accessToken}`,
-            }
-            : {}),
-    };
-}
 
 function formatDate(dateString: string) {
     return new Intl.DateTimeFormat("sr-RS", {
@@ -181,11 +168,10 @@ export default function EditReservationPage() {
                 }
 
                 const response =
-                    await fetch(
+                    await apiFetch(
                         `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/reservations/user/${user.id}`,
                         {
-                            headers:
-                                getAuthHeaders(),
+                            method: "GET",
                         }
                     );
 
@@ -257,11 +243,10 @@ export default function EditReservationPage() {
             setSelectedSlots([]);
 
             const response =
-                await fetch(
+                await apiFetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${reservation.clubId}/courts/${reservation.courtId}/availability?date=${selectedDate}`,
                     {
-                        headers:
-                            getAuthHeaders(),
+                        method: "GET",
                     }
                 );
 
@@ -409,13 +394,10 @@ export default function EditReservationPage() {
             setError("");
 
             const response =
-                await fetch(
+                await apiFetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/reservations/${reservation.id}/reschedule`,
                     {
                         method: "PUT",
-
-                        headers:
-                            getAuthHeaders(),
 
                         // TACNO DTO KOJI BACKEND OCEKUJE
                         body: JSON.stringify({
@@ -749,16 +731,16 @@ export default function EditReservationPage() {
                                                 Novi termin:{" "}
 
                                                 <span className="font-semibold">
-                                                {formatTime(
-                                                    selectedStartTime
-                                                )}
+                                                    {formatTime(
+                                                        selectedStartTime
+                                                    )}
 
                                                     {" - "}
 
                                                     {formatTime(
                                                         selectedEndTime
                                                     )}
-                                            </span>
+                                                </span>
                                             </p>
                                         )}
                                 </div>

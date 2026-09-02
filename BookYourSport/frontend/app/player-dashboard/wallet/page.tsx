@@ -1,17 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 import PlayerHeader from "../PlayerHeader";
-import Footer from "../../Footer";
-import { getAccessToken } from "@/lib/auth";
-import {
-    getBalance,
-    getTransactions,
-    WalletTransaction,
-} from "@/lib/paymentApi";
+import { getBalance, topUp } from "@/lib/paymentApi";
+
+const QUICK_AMOUNTS = [500, 1000, 2000, 5000];
 
 function formatPrice(amount: number, currency = "RSD") {
     return new Intl.NumberFormat("sr-Latn-RS", {
@@ -21,176 +16,190 @@ function formatPrice(amount: number, currency = "RSD") {
     }).format(amount);
 }
 
-function formatDateTime(value: string) {
-    return new Intl.DateTimeFormat("sr-Latn-RS", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    }).format(new Date(value));
-}
-
-function transactionLabel(type: string) {
-    switch (type) {
-        case "TopUp":
-            return "Uplata kredita";
-        case "ReservationCharge":
-            return "Plaćanje rezervacije";
-        case "Refund":
-            return "Povraćaj sredstava";
-        default:
-            return type;
-    }
-}
-
-function isIncoming(type: string) {
-    return type === "TopUp" || type === "Refund";
-}
-
-export default function WalletPage() {
-    const router = useRouter();
-
-    const [balance, setBalance] = useState(0);
+export default function TopUpPage() {
+    const [balance, setBalance] = useState<number | null>(null);
     const [currency, setCurrency] = useState("RSD");
-    const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [amount, setAmount] = useState("");
+    const [loadingBalance, setLoadingBalance] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
 
     useEffect(() => {
-        const token = getAccessToken();
-
-        if (!token) {
-            router.push("/login");
-            return;
-        }
-
-        loadWallet(token);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        loadBalance();
     }, []);
 
-    async function loadWallet(token: string) {
+    async function loadBalance() {
         try {
-            setLoading(true);
+            setLoadingBalance(true);
             setError("");
 
-            const [wallet, history] = await Promise.all([
-                getBalance(token),
-                getTransactions(token),
-            ]);
+            const wallet = await getBalance();
 
             setBalance(wallet.balance);
             setCurrency(wallet.currency);
-            setTransactions(history);
         } catch {
-            setError("Nije moguće učitati podatke o računu.");
+            setError(
+                "Nije moguće učitati trenutno stanje."
+            );
         } finally {
-            setLoading(false);
+            setLoadingBalance(false);
+        }
+    }
+
+    async function handleSubmit() {
+        const numericAmount = Number(amount);
+
+        setError("");
+        setSuccess("");
+
+        if (!numericAmount || numericAmount < 100) {
+            setError(
+                "Unesi iznos od najmanje 100 RSD."
+            );
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+
+            const wallet = await topUp(
+                numericAmount,
+                currency
+            );
+
+            setBalance(wallet.balance);
+            setCurrency(wallet.currency);
+
+            setSuccess(
+                `Uspešno si dopunio/la stanje za ${formatPrice(
+                    numericAmount,
+                    currency
+                )}.`
+            );
+
+            setAmount("");
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "Uplata nije uspela. Pokušaj ponovo."
+            );
+        } finally {
+            setSubmitting(false);
         }
     }
 
     return (
-        <main className="flex min-h-screen flex-col bg-zinc-50">
+        <main className="min-h-screen bg-[#f7f8f7]">
             <PlayerHeader />
 
-            <section className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+            <section className="mx-auto w-full max-w-3xl px-6 py-10">
                 <Link
-                    href="/player-dashboard"
-                    className="mb-5 inline-block text-sm font-semibold text-green-700 transition hover:text-green-900 hover:underline"
+                    href="/player-dashboard/wallet"
+                    className="text-sm font-semibold text-green-800 transition hover:text-green-950"
                 >
                     ← Nazad na moj nalog
                 </Link>
-                
-                <div>
-                    <h1 className="text-3xl font-bold text-zinc-900">
-                        Stanje na računu
+
+                <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-8">
+                    <span className="text-xs font-bold tracking-[0.18em] text-green-800">
+                        STANJE NA RAČUNU
+                    </span>
+
+                    <h1 className="mt-2 text-3xl font-bold text-zinc-800">
+                        Dodaj kredit
                     </h1>
 
                     <p className="mt-3 text-zinc-600">
-                        Pregled dostupnog kredita i svih transakcija.
+                        Dopuni stanje da bi mogao/la da rezervišeš termine na
+                        BookYourSport platformi.
                     </p>
-                </div>
 
-                <div className="mt-10 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
-                    <div className="rounded-xl border border-zinc-200 bg-white p-7">
-                        <p className="text-sm text-zinc-500">Dostupan kredit</p>
-
-                        <p className="mt-4 text-4xl font-bold text-zinc-900">
-                            {loading ? "Učitavanje..." : formatPrice(balance, currency)}
+                    <div className="mt-8 rounded-xl border border-green-100 bg-green-50 p-6">
+                        <p className="text-sm text-zinc-600">
+                            Trenutno stanje
                         </p>
 
-                        <p className="mt-3 text-sm leading-6 text-zinc-500">
-                            Kredit možeš koristiti za plaćanje rezervacija na
-                            platformi.
+                        <p className="mt-2 text-3xl font-bold text-zinc-800">
+                            {loadingBalance
+                                ? "Učitavanje..."
+                                : formatPrice(
+                                    balance ?? 0,
+                                    currency
+                                )}
                         </p>
+                    </div>
 
-                        <Link
-                            href="/player-dashboard/topup"
-                            className="mt-7 block rounded-lg bg-green-700 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-green-800"
+                    <div className="mt-6">
+                        <label
+                            htmlFor="amount"
+                            className="mb-2 block text-sm font-semibold text-zinc-700"
                         >
-                            Dodaj kredit
-                        </Link>
-                    </div>
+                            Iznos kredita
+                        </label>
 
-                    <div className="rounded-xl border border-zinc-200 bg-white">
-                        <div className="border-b border-zinc-200 px-6 py-5">
-                            <h2 className="text-xl font-semibold text-zinc-900">
-                                Istorija transakcija
-                            </h2>
+                        <input
+                            id="amount"
+                            type="number"
+                            min="100"
+                            placeholder="Unesi iznos"
+                            value={amount}
+                            onChange={(e) =>
+                                setAmount(e.target.value)
+                            }
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                        />
 
-                            <p className="mt-1 text-sm text-zinc-500">
-                                Sve promene na tvom računu.
-                            </p>
-                        </div>
-
-                        {error && (
-                            <div className="px-6 py-4 text-sm text-red-600">{error}</div>
-                        )}
-
-                        {!error && !loading && transactions.length === 0 && (
-                            <div className="px-6 py-10 text-center">
-                                <p className="text-sm text-zinc-500">
-                                    Trenutno nema transakcija.
-                                </p>
-                            </div>
-                        )}
-
-                        {!error && transactions.length > 0 && (
-                            <div className="divide-y divide-zinc-100">
-                                {transactions.map((transaction) => (
-                                    <div
-                                        key={transaction.id}
-                                        className="flex items-center justify-between px-6 py-4"
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {QUICK_AMOUNTS.map(
+                                (quickAmount) => (
+                                    <button
+                                        key={quickAmount}
+                                        type="button"
+                                        onClick={() =>
+                                            setAmount(
+                                                String(
+                                                    quickAmount
+                                                )
+                                            )
+                                        }
+                                        className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:border-green-600 hover:text-green-700"
                                     >
-                                        <div>
-                                            <p className="font-semibold text-zinc-900">
-                                                {transactionLabel(transaction.type)}
-                                            </p>
-
-                                            <p className="mt-1 text-sm text-zinc-500">
-                                                {formatDateTime(transaction.createdAt)}
-                                            </p>
-                                        </div>
-
-                                        <span
-                                            className={
-                                                isIncoming(transaction.type)
-                                                    ? "font-semibold text-green-700"
-                                                    : "font-semibold text-red-600"
-                                            }
-                                        >
-                                            {isIncoming(transaction.type) ? "+" : "-"}
-                                            {formatPrice(transaction.amount, currency)}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                        {formatPrice(
+                                            quickAmount,
+                                            currency
+                                        )}
+                                    </button>
+                                )
+                            )}
+                        </div>
                     </div>
+
+                    {error && (
+                        <div className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                            {error}
+                        </div>
+                    )}
+
+                    {success && (
+                        <div className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
+                            {success}
+                        </div>
+                    )}
+
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={submitting}
+                        className="mt-6 w-full rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {submitting
+                            ? "Uplata u toku..."
+                            : "Nastavi na plaćanje"}
+                    </button>
                 </div>
             </section>
-
-            <Footer />
         </main>
     );
 }

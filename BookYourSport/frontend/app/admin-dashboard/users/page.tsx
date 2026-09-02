@@ -17,6 +17,10 @@ import {
     getAccessToken,
 } from "@/lib/auth";
 
+import {
+    apiFetch,
+} from "@/lib/api";
+
 type User = {
     id: string;
     firstName: string;
@@ -163,31 +167,15 @@ export default function UsersPage() {
     const [sortOption, setSortOption] =
         useState<SortOption>("firstNameAsc");
 
-    useEffect(() => {
-        const token = getAccessToken();
-
-        if (!token) {
-            router.replace("/login");
-            return;
-        }
-
-        loadUsers(token);
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    async function loadUsers(token: string) {
+    async function loadUsers() {
         try {
             setLoading(true);
             setError("");
 
-            const response = await fetch(
+            const response = await apiFetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/auth/users`,
                 {
-                    headers: {
-                        Authorization:
-                            `Bearer ${token}`,
-                    },
+                    method: "GET",
                 }
             );
 
@@ -210,6 +198,19 @@ export default function UsersPage() {
             setLoading(false);
         }
     }
+
+    useEffect(() => {
+        const token = getAccessToken();
+
+        if (!token) {
+            router.replace("/login");
+            return;
+        }
+
+        loadUsers();
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const filteredUsers = useMemo(() => {
         const normalizedSearch =

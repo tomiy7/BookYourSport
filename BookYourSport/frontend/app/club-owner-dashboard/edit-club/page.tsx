@@ -203,8 +203,7 @@ export default function EditClubPage() {
         try {
             const updated = await updateClub(
                 club.id,
-                { ...form, workingHours: workingHoursPayload },
-                token
+                { ...form, workingHours: workingHoursPayload }
             );
             setClub(updated);
             setSuccess("Podaci o klubu su sačuvani.");

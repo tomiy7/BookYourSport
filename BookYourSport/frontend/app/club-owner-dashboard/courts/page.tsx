@@ -121,11 +121,10 @@ export default function CourtsPage() {
                 await updateCourt(
                     club.id,
                     editingCourt.id,
-                    { ...form, isActive: editingCourt.isActive },
-                    token
+                    { ...form, isActive: editingCourt.isActive }
                 );
             } else {
-                await createCourt(club.id, form, token);
+                await createCourt(club.id, form);
             }
 
             setShowForm(false);
@@ -159,8 +158,7 @@ export default function CourtsPage() {
                     pricePerHour: court.pricePerHour.amount,
                     currency: court.pricePerHour.currency,
                     isActive: !court.isActive,
-                },
-                token
+                }
             );
 
             loadClub();
@@ -186,7 +184,7 @@ export default function CourtsPage() {
         if (!token) return;
 
         try {
-            await deleteCourt(club.id, court.id, token);
+            await deleteCourt(club.id, court.id);
             loadClub();
         } catch (err) {
             setError(

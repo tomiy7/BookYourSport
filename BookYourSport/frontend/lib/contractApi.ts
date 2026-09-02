@@ -1,3 +1,5 @@
+import { apiFetch } from "./api";
+
 export interface Contract {
     contractId: string;
     userId: string;
@@ -12,13 +14,11 @@ export interface PaymentResult {
     paymentId: string;
 }
 
-
 // ==========================================
 // API URL
 // ==========================================
 
-const API_URL =
-    process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 function getPaymentApiUrl(): string {
     if (!API_URL) {
@@ -31,28 +31,6 @@ function getPaymentApiUrl(): string {
     return `${API_URL}/payment`;
 }
 
-
-// ==========================================
-// AUTH HEADERS
-// ==========================================
-
-function getAuthHeaders() {
-    const token =
-        localStorage.getItem("accessToken");
-
-    if (!token) {
-        throw new Error(
-            "Nisi prijavljen."
-        );
-    }
-
-    return {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-    };
-}
-
-
 // ==========================================
 // ERROR MESSAGE
 // ==========================================
@@ -62,8 +40,7 @@ async function getErrorMessage(
     fallback: string
 ): Promise<string> {
     try {
-        const data =
-            await response.json();
+        const data = await response.json();
 
         return (
             data.message ||
@@ -76,7 +53,6 @@ async function getErrorMessage(
     }
 }
 
-
 // ==========================================
 // GET CONTRACT BY USER
 // GET /payment/contracts/user/{userId}
@@ -85,15 +61,12 @@ async function getErrorMessage(
 export async function getContractByUser(
     userId: string
 ): Promise<Contract | null> {
-
-    const response =
-        await fetch(
-            `${getPaymentApiUrl()}/contracts/user/${userId}`,
-            {
-                method: "GET",
-                headers: getAuthHeaders(),
-            }
-        );
+    const response = await apiFetch(
+        `${getPaymentApiUrl()}/contracts/user/${userId}`,
+        {
+            method: "GET",
+        }
+    );
 
     if (response.status === 404) {
         return null;
@@ -111,7 +84,6 @@ export async function getContractByUser(
     return response.json();
 }
 
-
 // ==========================================
 // GENERATE CONTRACT
 // POST /payment/contracts/generate
@@ -120,18 +92,15 @@ export async function getContractByUser(
 export async function generateContract(
     userId: string
 ): Promise<Contract> {
-
-    const response =
-        await fetch(
-            `${getPaymentApiUrl()}/contracts/generate`,
-            {
-                method: "POST",
-                headers: getAuthHeaders(),
-                body: JSON.stringify({
-                    userId,
-                }),
-            }
-        );
+    const response = await apiFetch(
+        `${getPaymentApiUrl()}/contracts/generate`,
+        {
+            method: "POST",
+            body: JSON.stringify({
+                userId,
+            }),
+        }
+    );
 
     if (!response.ok) {
         throw new Error(
@@ -145,7 +114,6 @@ export async function generateContract(
     return response.json();
 }
 
-
 // ==========================================
 // SIGN CONTRACT
 // POST /payment/contracts/{contractId}/sign
@@ -154,15 +122,12 @@ export async function generateContract(
 export async function signContract(
     contractId: string
 ): Promise<Contract> {
-
-    const response =
-        await fetch(
-            `${getPaymentApiUrl()}/contracts/${contractId}/sign`,
-            {
-                method: "POST",
-                headers: getAuthHeaders(),
-            }
-        );
+    const response = await apiFetch(
+        `${getPaymentApiUrl()}/contracts/${contractId}/sign`,
+        {
+            method: "POST",
+        }
+    );
 
     if (!response.ok) {
         throw new Error(
@@ -175,7 +140,6 @@ export async function signContract(
 
     return response.json();
 }
-
 
 // ==========================================
 // CONTRACT DOCUMENT URL
@@ -191,7 +155,6 @@ export function getContractDocumentUrl(
     );
 }
 
-
 // ==========================================
 // PAY SUBSCRIPTION
 // POST /payment/api/Subscription/pay
@@ -200,18 +163,15 @@ export function getContractDocumentUrl(
 export async function paySubscription(
     userId: string
 ): Promise<PaymentResult> {
-
-    const response =
-        await fetch(
-            `${getPaymentApiUrl()}/api/Subscription/pay`,
-            {
-                method: "POST",
-                headers: getAuthHeaders(),
-                body: JSON.stringify({
-                    userId,
-                }),
-            }
-        );
+    const response = await apiFetch(
+        `${getPaymentApiUrl()}/api/Subscription/pay`,
+        {
+            method: "POST",
+            body: JSON.stringify({
+                userId,
+            }),
+        }
+    );
 
     if (!response.ok) {
         throw new Error(

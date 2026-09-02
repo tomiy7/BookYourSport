@@ -74,8 +74,8 @@ export default function ClubReservationsPage() {
         [selectedDate]
     );
 
-    function loadData(clubId: string, token: string) {
-        getClubReservations(clubId, token)
+    function loadData(clubId: string) {
+        getClubReservations(clubId)
             .then(setReservations)
             .catch(() =>
                 setError("Nije moguće učitati rezervacije.")
@@ -104,7 +104,7 @@ export default function ClubReservationsPage() {
                 }
 
                 setClub(ownClub);
-                loadData(ownClub.id, token);
+                loadData(ownClub.id);
             })
             .catch(() => {
                 setError("Nije moguće učitati podatke o klubu.");
@@ -136,9 +136,9 @@ export default function ClubReservationsPage() {
         setCancelling(true);
 
         try {
-            await cancelReservation(reservationId, token);
+            await cancelReservation(reservationId);
             setSelectedReservation(null);
-            loadData(club.id, token);
+            loadData(club.id);
         } catch (err) {
             setError(
                 err instanceof Error

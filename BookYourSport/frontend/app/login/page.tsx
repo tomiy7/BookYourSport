@@ -9,6 +9,8 @@ import {
     getDashboardPath,
 } from "@/lib/user";
 
+import { apiFetch } from "@/lib/api";
+
 type LoginForm = {
     email: string;
     password: string;
@@ -196,18 +198,18 @@ export default function LoginPage() {
 
             // ==========================================
             // DOHVAT STVARNOG USERA
+            //
+            // Koristimo apiFetch (ne ručni fetch +
+            // Authorization header). accessToken je
+            // upravo sačuvan u localStorage par redova
+            // iznad, pa apiFetch ima šta da pročita.
             // ==========================================
 
             const userResponse =
-                await fetch(
+                await apiFetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
                     {
                         method: "GET",
-
-                        headers: {
-                            Authorization:
-                                `Bearer ${loginData.accessToken}`,
-                        },
                     }
                 );
 
