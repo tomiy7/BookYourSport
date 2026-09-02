@@ -198,9 +198,7 @@ export function getContractDocumentUrl(
 // ==========================================
 
 export async function paySubscription(
-    userId: string,
-    amount: number,
-    currency: string
+    userId: string
 ): Promise<PaymentResult> {
 
     const response =
@@ -211,8 +209,6 @@ export async function paySubscription(
                 headers: getAuthHeaders(),
                 body: JSON.stringify({
                     userId,
-                    amount,
-                    currency,
                 }),
             }
         );

@@ -18,6 +18,7 @@ import {
 
 import {
     getBalance,
+    topUp,
 } from "@/lib/paymentApi";
 
 import {
@@ -99,6 +100,192 @@ function normalizeStatus(
 }
 
 
+
+// ==========================================
+// TOP UP MODAL
+// Isti modal kao kod rezervacije.
+// Prikazuje se kada korisnik nema dovoljno
+// kredita za plaćanje Club Owner pretplate.
+// ==========================================
+
+function TopUpModal({
+                        onClose,
+                        onSuccess,
+                    }: {
+    onClose: () => void;
+    onSuccess: () => void;
+}) {
+    const [balance, setBalance] =
+        useState<number | null>(null);
+
+    const [currency, setCurrency] =
+        useState("RSD");
+
+    const [amount, setAmount] =
+        useState("");
+
+    const [loadingBalance, setLoadingBalance] =
+        useState(true);
+
+    const [submitting, setSubmitting] =
+        useState(false);
+
+    const [error, setError] =
+        useState("");
+
+    useEffect(() => {
+        const token =
+            getAccessToken();
+
+        if (!token) {
+            return;
+        }
+
+        getBalance(token)
+            .then((wallet) => {
+                setBalance(wallet.balance);
+                setCurrency(wallet.currency);
+            })
+            .catch(() =>
+                setError(
+                    "Nije moguće učitati trenutno stanje."
+                )
+            )
+            .finally(() =>
+                setLoadingBalance(false)
+            );
+    }, []);
+
+    async function handleTopUp() {
+        const token =
+            getAccessToken();
+
+        if (!token) {
+            return;
+        }
+
+        const numericAmount =
+            Number(amount);
+
+        if (
+            !numericAmount ||
+            numericAmount < 100
+        ) {
+            setError(
+                "Unesi iznos od najmanje 100 RSD."
+            );
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            setError("");
+
+            await topUp(
+                numericAmount,
+                token,
+                currency
+            );
+
+            onSuccess();
+
+        } catch (err) {
+            setError(
+                err instanceof Error
+                    ? err.message
+                    : "Uplata nije uspela."
+            );
+
+            setSubmitting(false);
+        }
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-7 shadow-xl">
+
+                <h3 className="text-xl font-bold text-zinc-900">
+                    Nemaš dovoljno kredita
+                </h3>
+
+                <p className="mt-2 text-sm text-zinc-600">
+                    Dopuni stanje da bi mogao/la da završiš
+                    plaćanje Club Owner pretplate.
+                    Nastavljamo tačno tamo gde smo stali.
+                </p>
+
+                <div className="mt-5 rounded-xl border border-green-100 bg-green-50 p-4">
+
+                    <p className="text-xs text-zinc-500">
+                        Trenutno stanje
+                    </p>
+
+                    <p className="mt-1 text-2xl font-bold text-zinc-800">
+                        {loadingBalance
+                            ? "Učitavanje..."
+                            : formatPrice(
+                                balance ?? 0,
+                                currency
+                            )}
+                    </p>
+
+                </div>
+
+                <label
+                    htmlFor="subscription-topup-amount"
+                    className="mb-2 mt-5 block text-sm font-semibold text-zinc-700"
+                >
+                    Iznos dopune
+                </label>
+
+                <input
+                    id="subscription-topup-amount"
+                    type="number"
+                    min="100"
+                    placeholder="Unesi iznos"
+                    value={amount}
+                    onChange={(e) =>
+                        setAmount(e.target.value)
+                    }
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-zinc-900 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                />
+
+                {error && (
+                    <p className="mt-3 text-sm text-red-600">
+                        {error}
+                    </p>
+                )}
+
+                <div className="mt-6 flex gap-3">
+
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={submitting}
+                        className="flex-1 rounded-xl border border-zinc-300 bg-white py-3 font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50"
+                    >
+                        Otkaži
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={handleTopUp}
+                        disabled={submitting}
+                        className="flex-1 rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        {submitting
+                            ? "Uplata u toku..."
+                            : "Uplati i nastavi"}
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+    );
+}
+
+
 export default function PlayerDashboard() {
 
     const router =
@@ -152,11 +339,6 @@ export default function PlayerDashboard() {
     // ==========================================
 
     const [
-        subscriptionAmount,
-        setSubscriptionAmount,
-    ] = useState("");
-
-    const [
         subscriptionLoading,
         setSubscriptionLoading,
     ] = useState(false);
@@ -176,6 +358,11 @@ export default function PlayerDashboard() {
         successMessage,
         setSuccessMessage,
     ] = useState("");
+
+    const [
+        showTopUpModal,
+        setShowTopUpModal,
+    ] = useState(false);
 
 
     // ==========================================
@@ -609,34 +796,13 @@ export default function PlayerDashboard() {
     async function handlePaySubscription() {
 
         const userId =
-            getUserId(
-                user
-            );
+            getUserId(user);
 
 
         if (!userId) {
 
             setError(
                 "Nije moguće pronaći ID korisnika."
-            );
-
-            return;
-        }
-
-
-        const amount =
-            Number(
-                subscriptionAmount
-            );
-
-
-        if (
-            !amount ||
-            amount <= 0
-        ) {
-
-            setError(
-                "Unesi validan iznos pretplate."
             );
 
             return;
@@ -654,17 +820,16 @@ export default function PlayerDashboard() {
             );
 
 
+            // Subscription amount and currency
+            // are defined by the backend configuration.
             const result =
                 await paySubscription(
-                    userId,
-                    amount,
-                    currency
+                    userId
                 );
 
 
-            if (
-                !result.isSuccessful
-            ) {
+            if (!result.isSuccessful) {
+
                 throw new Error(
                     "Plaćanje pretplate nije uspešno."
                 );
@@ -706,11 +871,22 @@ export default function PlayerDashboard() {
 
         } catch (error) {
 
-            setError(
+            const errorMessage =
                 error instanceof Error
                     ? error.message
-                    : "Plaćanje pretplate nije uspelo."
-            );
+                    : "Plaćanje pretplate nije uspelo.";
+
+            const isInsufficientCredit =
+                errorMessage
+                    .toLowerCase()
+                    .includes("nedovoljno sredstava");
+
+            if (isInsufficientCredit) {
+                setError("");
+                setShowTopUpModal(true);
+            } else {
+                setError(errorMessage);
+            }
 
         } finally {
 
@@ -1158,36 +1334,17 @@ export default function PlayerDashboard() {
 
                                 <div className="mt-5 max-w-md">
 
-                                    <label
-                                        htmlFor="subscriptionAmount"
-                                        className="mb-2 block text-sm font-semibold text-zinc-700"
-                                    >
-                                        Iznos pretplate
-                                    </label>
+                                    {/* FIXED SUBSCRIPTION PRICE */}
 
+                                    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-4">
 
-                                    <div className="flex gap-3">
+                                        <p className="text-sm text-zinc-500">
+                                            Iznos pretplate
+                                        </p>
 
-                                        <input
-                                            id="subscriptionAmount"
-                                            type="number"
-                                            min="1"
-                                            value={
-                                                subscriptionAmount
-                                            }
-                                            onChange={(event) =>
-                                                setSubscriptionAmount(
-                                                    event.target.value
-                                                )
-                                            }
-                                            placeholder="Unesi iznos"
-                                            className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-800 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
-                                        />
-
-
-                                        <span className="flex items-center rounded-lg border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-600">
-                                            {currency}
-                                        </span>
+                                        <p className="mt-1 text-2xl font-bold text-zinc-800">
+                                            10.000 RSD
+                                        </p>
 
                                     </div>
 
@@ -1423,9 +1580,9 @@ export default function PlayerDashboard() {
 
                     <div className="border-b border-zinc-200 px-6 py-5">
 
-                        <span className="text-xs font-bold tracking-[0.18em] text-green-800">
-                            MOJ PROFIL
-                        </span>
+            <span className="text-xs font-bold tracking-[0.18em] text-green-800">
+                MOJ PROFIL
+            </span>
 
 
                         <h2 className="mt-2 text-2xl font-bold text-zinc-800">
@@ -1512,17 +1669,32 @@ export default function PlayerDashboard() {
 
                     <div className="border-t border-zinc-200 px-6 py-5">
 
-                        <span className="text-sm font-semibold text-green-800">
-                            Izmeni lične podatke
-                        </span>
+            <span className="text-sm font-semibold text-green-800">
+                Izmeni lične podatke
+            </span>
 
                     </div>
 
                 </section>
+                
 
 
+        </section>
 
-            </section>
+            {showTopUpModal && (
+                <TopUpModal
+                    onClose={() =>
+                        setShowTopUpModal(false)
+                    }
+                    onSuccess={async () => {
+                        setShowTopUpModal(false);
+
+                        await loadWallet();
+
+                        await handlePaySubscription();
+                    }}
+                />
+            )}
 
         </main>
     );

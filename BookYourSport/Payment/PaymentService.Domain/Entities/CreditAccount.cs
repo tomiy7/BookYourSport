@@ -73,6 +73,34 @@ public class CreditAccount
 
         return transaction;
     }
+    
+    public Transaction ChargeSubscription(decimal amount, Guid referenceId)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Charge amount must be greater than zero.",
+                nameof(amount));
+
+        if (referenceId == Guid.Empty)
+            throw new ArgumentException(
+                "Reference ID cannot be empty.",
+                nameof(referenceId));
+
+        if (Balance < amount)
+            throw new InvalidOperationException(
+                "Insufficient credit.");
+
+        Balance -= amount;
+
+        var transaction = new Transaction(
+            amount,
+            TransactionType.SubscriptionCharge,
+            referenceId);
+
+        _transactions.Add(transaction);
+
+        return transaction;
+    }
 
     // Refunds credit for a reservation and prevents duplicate refunds.
     public Transaction Refund(decimal amount, Guid referenceId)

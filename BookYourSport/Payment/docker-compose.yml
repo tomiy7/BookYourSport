@@ -28,6 +28,8 @@ services:
       - RabbitMQ__Password=guest
       - Jwt__Secret= ${JWT_SECRET} #MyVeryLongBookYourSportJwtSecretKey2026Secure
       - AuthService__BaseUrl=http://auth_api:8080
+      - Subscription__Amount=10000
+      - Subscription__Currency=RSD
     networks:
       - backend
 

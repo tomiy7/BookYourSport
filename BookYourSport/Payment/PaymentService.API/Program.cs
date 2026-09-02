@@ -13,6 +13,7 @@ using PaymentService.Application.Commands.RefundCredit;
 using PaymentService.Application.Commands.SignContract;
 using PaymentService.Application.Commands.TopUpCredit;
 using PaymentService.Application.Interfaces;
+using PaymentService.Application.Common;
 using PaymentService.Domain.Services;
 using PaymentService.Infrastructure.Auth;
 using PaymentService.Infrastructure.Documents;
@@ -24,6 +25,29 @@ using PaymentService.Infrastructure.Repositories;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// ==========================================
+// SUBSCRIPTION CONFIGURATION
+// ==========================================
+
+// builder.Services.Configure<SubscriptionSettings>(
+//     builder.Configuration.GetSection("Subscription"));
+var subscriptionSettings = new SubscriptionSettings
+{
+    Amount = builder.Configuration.GetValue<decimal>(
+        "Subscription:Amount"),
+
+    Currency = builder.Configuration[
+        "Subscription:Currency"] ?? "RSD"
+};
+
+builder.Services.AddSingleton(subscriptionSettings);
+
+
+// ==========================================
+// JWT CONFIGURATION
+// ==========================================
 
 var jwtSecret = builder.Configuration["Jwt:Secret"]
                 ?? throw new InvalidOperationException(
@@ -83,11 +107,20 @@ builder.Services
         };
     });
 
+
+// ==========================================
+// SERVICES
+// ==========================================
+
 builder.Services.AddHostedService<OutboxProcessor>();
 
 builder.Services.AddAuthorization();
 
-// CORS - allow frontend to communicate with Payment API
+
+// ==========================================
+// CORS
+// ==========================================
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -97,8 +130,18 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader());
 });
 
+
+// ==========================================
+// QUESTPDF
+// ==========================================
+
 QuestPDF.Settings.License =
     QuestPDF.Infrastructure.LicenseType.Community;
+
+
+// ==========================================
+// CONTROLLERS / OPENAPI
+// ==========================================
 
 builder.Services.AddControllers();
 
@@ -126,7 +169,11 @@ builder.Services.AddSwaggerGen(options =>
         });
 });
 
-// Register payment and credit account services.
+
+// ==========================================
+// PAYMENT / CREDIT SERVICES
+// ==========================================
+
 builder.Services.AddScoped<
     IPaymentProcessor,
     MockPaymentProcessor>();
@@ -147,13 +194,21 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     RefundPolicy>();
 
-// Configure the Payment Service database.
+
+// ==========================================
+// PAYMENT DATABASE
+// ==========================================
+
 builder.Services.AddDbContext<PaymentDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString(
             "PaymentDb")));
 
-// Configure communication with Auth Service.
+
+// ==========================================
+// AUTH SERVICE
+// ==========================================
+
 builder.Services.AddHttpClient<
     IAuthServiceClient,
     AuthServiceClient>(client =>
@@ -163,10 +218,19 @@ builder.Services.AddHttpClient<
             "AuthService:BaseUrl"]!);
 });
 
+
+// ==========================================
+// SUBSCRIPTION
+// ==========================================
+
 builder.Services.AddScoped<
     PaySubscriptionHandler>();
 
-// Register contract generation and persistence services.
+
+// ==========================================
+// CONTRACT SERVICES
+// ==========================================
+
 builder.Services.AddScoped<
     IPdfContractGenerator,
     PdfContractGenerator>();
@@ -181,6 +245,11 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     SignContractHandler>();
 
+
+// ==========================================
+// MESSAGING / OUTBOX
+// ==========================================
+
 builder.Services.AddScoped<
     IEventPublisher,
     RabbitMqEventPublisher>();
@@ -188,6 +257,11 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IOutboxWriter,
     OutboxWriter>();
+
+
+// ==========================================
+// EXCEPTION HANDLING
+// ==========================================
 
 builder.Services.AddExceptionHandler<
     GlobalExceptionHandler>();
@@ -197,9 +271,18 @@ builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
+
+// ==========================================
+// MIDDLEWARE
+// ==========================================
+
 app.UseExceptionHandler();
 
-// Configure API documentation and Swagger for development.
+
+// ==========================================
+// SWAGGER
+// ==========================================
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -207,6 +290,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+
+// ==========================================
+// HTTP / CORS / AUTH
+// ==========================================
 
 app.UseHttpsRedirection();
 
