@@ -120,16 +120,13 @@ export default function PlayerDashboard() {
     const [balance, setBalance] =
         useState(0);
 
-
     const [currency, setCurrency] =
         useState("RSD");
-
 
     const [
         walletLoading,
         setWalletLoading,
-    ] =
-        useState(true);
+    ] = useState(true);
 
 
     // ==========================================
@@ -139,19 +136,15 @@ export default function PlayerDashboard() {
     const [contract, setContract] =
         useState<Contract | null>(null);
 
-
     const [
         contractLoading,
         setContractLoading,
-    ] =
-        useState(true);
-
+    ] = useState(true);
 
     const [
         contractActionLoading,
         setContractActionLoading,
-    ] =
-        useState(false);
+    ] = useState(false);
 
 
     // ==========================================
@@ -161,15 +154,12 @@ export default function PlayerDashboard() {
     const [
         subscriptionAmount,
         setSubscriptionAmount,
-    ] =
-        useState("");
-
+    ] = useState("");
 
     const [
         subscriptionLoading,
         setSubscriptionLoading,
-    ] =
-        useState(false);
+    ] = useState(false);
 
 
     // ==========================================
@@ -179,16 +169,13 @@ export default function PlayerDashboard() {
     const [loading, setLoading] =
         useState(true);
 
-
     const [error, setError] =
         useState("");
-
 
     const [
         successMessage,
         setSuccessMessage,
-    ] =
-        useState("");
+    ] = useState("");
 
 
     // ==========================================
@@ -201,7 +188,6 @@ export default function PlayerDashboard() {
             const accessToken =
                 getAccessToken();
 
-
             const savedUser =
                 getStoredUser();
 
@@ -210,13 +196,11 @@ export default function PlayerDashboard() {
                 !accessToken ||
                 !savedUser
             ) {
-
                 router.replace(
                     "/login"
                 );
 
                 return null;
-
             }
 
 
@@ -225,10 +209,8 @@ export default function PlayerDashboard() {
                 const refreshedUser =
                     await refreshCurrentUser();
 
-
                 const typedUser =
                     refreshedUser as User;
-
 
                 const dashboardPath =
                     getDashboardPath(
@@ -240,20 +222,17 @@ export default function PlayerDashboard() {
                     dashboardPath !==
                     "/player-dashboard"
                 ) {
-
                     router.replace(
                         dashboardPath
                     );
 
                     return null;
-
                 }
 
 
                 setUser(
                     typedUser
                 );
-
 
                 return typedUser;
 
@@ -265,11 +244,11 @@ export default function PlayerDashboard() {
                 );
 
 
-                // Fallback na localStorage
-                // ako refresh trenutno ne uspe.
+                // Ako refresh trenutno ne uspe,
+                // koristimo poslednje sačuvane podatke.
+
                 const typedUser =
                     savedUser as User;
-
 
                 const dashboardPath =
                     getDashboardPath(
@@ -281,13 +260,11 @@ export default function PlayerDashboard() {
                     dashboardPath !==
                     "/player-dashboard"
                 ) {
-
                     router.replace(
                         dashboardPath
                     );
 
                     return null;
-
                 }
 
 
@@ -295,9 +272,7 @@ export default function PlayerDashboard() {
                     typedUser
                 );
 
-
                 return typedUser;
-
             }
 
         }, [
@@ -323,7 +298,6 @@ export default function PlayerDashboard() {
                 );
 
                 return;
-
             }
 
 
@@ -361,7 +335,6 @@ export default function PlayerDashboard() {
                 setWalletLoading(
                     false
                 );
-
             }
 
         }, []);
@@ -388,13 +361,11 @@ export default function PlayerDashboard() {
                     null
                 );
 
-
                 setContractLoading(
                     false
                 );
 
                 return;
-
             }
 
 
@@ -432,7 +403,6 @@ export default function PlayerDashboard() {
                 setContractLoading(
                     false
                 );
-
             }
 
         }, []);
@@ -462,7 +432,6 @@ export default function PlayerDashboard() {
                 );
 
                 return;
-
             }
 
 
@@ -471,12 +440,10 @@ export default function PlayerDashboard() {
                     currentUser.approvalStatus
                 );
 
-
             const contractStatus =
                 normalizeStatus(
                     currentUser.contractStatus
                 );
-
 
             const userId =
                 getUserId(
@@ -519,8 +486,6 @@ export default function PlayerDashboard() {
                     );
 
 
-                    // Osvežavamo usera jer je Auth Service
-                    // dobio ContractStatus = Generated.
                     const refreshedUser =
                         await refreshCurrentUser();
 
@@ -550,7 +515,6 @@ export default function PlayerDashboard() {
                     setContractLoading(
                         false
                     );
-
                 }
 
             } else {
@@ -558,7 +522,6 @@ export default function PlayerDashboard() {
                 await loadContract(
                     currentUser
                 );
-
             }
 
 
@@ -572,7 +535,6 @@ export default function PlayerDashboard() {
             setLoading(
                 false
             );
-
         }
 
 
@@ -598,15 +560,9 @@ export default function PlayerDashboard() {
 
         try {
 
-            setError(
-                ""
-            );
+            setError("");
 
-
-            setSuccessMessage(
-                ""
-            );
-
+            setSuccessMessage("");
 
             setContractActionLoading(
                 true
@@ -619,12 +575,10 @@ export default function PlayerDashboard() {
                 );
 
 
-            setContract(
-                {
-                    ...contract,
-                    ...signedContract,
-                }
-            );
+            setContract({
+                ...contract,
+                ...signedContract,
+            });
 
 
             setSuccessMessage(
@@ -644,9 +598,7 @@ export default function PlayerDashboard() {
             setContractActionLoading(
                 false
             );
-
         }
-
     }
 
 
@@ -669,7 +621,6 @@ export default function PlayerDashboard() {
             );
 
             return;
-
         }
 
 
@@ -689,21 +640,14 @@ export default function PlayerDashboard() {
             );
 
             return;
-
         }
 
 
         try {
 
-            setError(
-                ""
-            );
+            setError("");
 
-
-            setSuccessMessage(
-                ""
-            );
-
+            setSuccessMessage("");
 
             setSubscriptionLoading(
                 true
@@ -721,11 +665,9 @@ export default function PlayerDashboard() {
             if (
                 !result.isSuccessful
             ) {
-
                 throw new Error(
                     "Plaćanje pretplate nije uspešno."
                 );
-
             }
 
 
@@ -734,8 +676,6 @@ export default function PlayerDashboard() {
             );
 
 
-            // Backend nakon uspešne pretplate
-            // treba da promeni role korisnika.
             const refreshedUser =
                 await refreshCurrentUser();
 
@@ -759,11 +699,9 @@ export default function PlayerDashboard() {
                 newDashboardPath !==
                 "/player-dashboard"
             ) {
-
                 router.replace(
                     newDashboardPath
                 );
-
             }
 
         } catch (error) {
@@ -779,9 +717,7 @@ export default function PlayerDashboard() {
             setSubscriptionLoading(
                 false
             );
-
         }
-
     }
 
 
@@ -806,7 +742,6 @@ export default function PlayerDashboard() {
             documentUrl,
             "_blank"
         );
-
     }
 
 
@@ -819,7 +754,6 @@ export default function PlayerDashboard() {
             user?.approvalStatus
         );
 
-
     const contractStatus =
         normalizeStatus(
             contract?.status
@@ -830,40 +764,36 @@ export default function PlayerDashboard() {
         approvalStatus ===
         "requested";
 
-
     const isPending =
         approvalStatus ===
         "pending";
-
 
     const isWaitingForApproval =
         isRequested ||
         isPending;
 
-
     const isApproved =
         approvalStatus ===
         "approved";
-
 
     const isRejected =
         approvalStatus ===
         "rejected";
 
 
-    // Ako backend vrati prazan status,
-    // notrequested ili bilo koju vrednost
-    // koja nije stvarni zahtev, korisnik
-    // može poslati zahtev.
     const canRequestOwnerAccount =
         !isWaitingForApproval &&
         !isApproved;
 
 
     const isContractGenerated =
-        contractStatus === "generated" ||
-        contractStatus === "pendingsignature" ||
-        contractStatus === "pending_signature";
+        contractStatus ===
+        "generated" ||
+        contractStatus ===
+        "pendingsignature" ||
+        contractStatus ===
+        "pending_signature";
+
 
     const isContractSigned =
         contractStatus ===
@@ -885,9 +815,7 @@ export default function PlayerDashboard() {
                 </p>
 
             </main>
-
         );
-
     }
 
 
@@ -903,7 +831,6 @@ export default function PlayerDashboard() {
 
 
             <section className="mx-auto w-full max-w-6xl px-6 py-10">
-
 
                 {/* ================================= */}
                 {/* NASLOV */}
@@ -937,11 +864,8 @@ export default function PlayerDashboard() {
                 {successMessage && (
 
                     <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-5 py-4 text-sm leading-6 text-green-800">
-
                         {successMessage}
-
                     </div>
-
                 )}
 
 
@@ -952,11 +876,8 @@ export default function PlayerDashboard() {
                 {error && (
 
                     <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-5 py-4 text-sm leading-6 text-red-700">
-
                         {error}
-
                     </div>
-
                 )}
 
 
@@ -964,8 +885,7 @@ export default function PlayerDashboard() {
                 {/* CLUB OWNER ACTIVATION */}
                 {/* ================================= */}
 
-                <section className="mb-8 rounded-xl border border-zinc-200 bg-white p-6">
-
+                <section className="rounded-xl border border-zinc-200 bg-white p-6">
 
                     <div>
 
@@ -988,14 +908,9 @@ export default function PlayerDashboard() {
                     </div>
 
 
-                    {/* ================================= */}
                     {/* STATUS CARDS */}
-                    {/* ================================= */}
 
                     <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-
-
-                        {/* ZAHTEV */}
 
                         <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5">
 
@@ -1018,8 +933,6 @@ export default function PlayerDashboard() {
 
                         </div>
 
-
-                        {/* UGOVOR */}
 
                         <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5">
 
@@ -1045,8 +958,6 @@ export default function PlayerDashboard() {
                         </div>
 
 
-                        {/* SUBSCRIPTION */}
-
                         <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-5">
 
                             <p className="text-sm text-zinc-500">
@@ -1067,9 +978,7 @@ export default function PlayerDashboard() {
                     </div>
 
 
-                    {/* ================================= */}
                     {/* REQUEST CLUB OWNER */}
-                    {/* ================================= */}
 
                     {canRequestOwnerAccount && (
 
@@ -1090,7 +999,6 @@ export default function PlayerDashboard() {
                                     </p>
 
                                 </div>
-
                             )}
 
 
@@ -1101,32 +1009,26 @@ export default function PlayerDashboard() {
                                     možeš poslati zahtev za
                                     Club Owner nalog.
                                 </p>
-
                             )}
 
 
                             <button
                                 type="button"
-
                                 onClick={() =>
                                     router.push(
                                         "/player-dashboard/owner-request"
                                     )
                                 }
-
                                 className="mt-4 rounded-lg bg-green-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-800"
                             >
                                 Zatraži Club Owner nalog
                             </button>
 
                         </div>
-
                     )}
 
 
-                    {/* ================================= */}
                     {/* REQUEST WAITING */}
-                    {/* ================================= */}
 
                     {isWaitingForApproval && (
 
@@ -1144,13 +1046,10 @@ export default function PlayerDashboard() {
                             </p>
 
                         </div>
-
                     )}
 
 
-                    {/* ================================= */}
                     {/* APPROVED - WAITING CONTRACT */}
-                    {/* ================================= */}
 
                     {isApproved &&
                         !contractLoading &&
@@ -1172,26 +1071,21 @@ export default function PlayerDashboard() {
 
                                 <button
                                     type="button"
-
                                     onClick={() =>
                                         loadContract(
                                             user
                                         )
                                     }
-
                                     className="mt-4 rounded-lg border border-green-700 px-5 py-2.5 text-sm font-semibold text-green-800 transition hover:bg-green-50"
                                 >
                                     Osveži status ugovora
                                 </button>
 
                             </div>
-
                         )}
 
 
-                    {/* ================================= */}
                     {/* GENERATED CONTRACT */}
-                    {/* ================================= */}
 
                     {contract &&
                         isContractGenerated && (
@@ -1214,11 +1108,9 @@ export default function PlayerDashboard() {
 
                                     <button
                                         type="button"
-
                                         onClick={
                                             handleOpenContract
                                         }
-
                                         className="rounded-lg border border-green-700 px-5 py-3 text-sm font-semibold text-green-800 transition hover:bg-green-50"
                                     >
                                         Pogledaj ugovor
@@ -1227,33 +1119,26 @@ export default function PlayerDashboard() {
 
                                     <button
                                         type="button"
-
                                         onClick={
                                             handleSignContract
                                         }
-
                                         disabled={
                                             contractActionLoading
                                         }
-
                                         className="rounded-lg bg-green-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {contractActionLoading
                                             ? "Potpisivanje..."
                                             : "Potpiši ugovor"}
-
                                     </button>
 
                                 </div>
 
                             </div>
-
                         )}
 
 
-                    {/* ================================= */}
                     {/* SIGNED CONTRACT */}
-                    {/* ================================= */}
 
                     {contract &&
                         isContractSigned && (
@@ -1285,31 +1170,23 @@ export default function PlayerDashboard() {
 
                                         <input
                                             id="subscriptionAmount"
-
                                             type="number"
-
                                             min="1"
-
                                             value={
                                                 subscriptionAmount
                                             }
-
                                             onChange={(event) =>
                                                 setSubscriptionAmount(
                                                     event.target.value
                                                 )
                                             }
-
                                             placeholder="Unesi iznos"
-
                                             className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-800 outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                                         />
 
 
                                         <span className="flex items-center rounded-lg border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-600">
-
                                             {currency}
-
                                         </span>
 
                                     </div>
@@ -1317,105 +1194,181 @@ export default function PlayerDashboard() {
 
                                     <button
                                         type="button"
-
                                         onClick={
                                             handlePaySubscription
                                         }
-
                                         disabled={
                                             subscriptionLoading
                                         }
-
                                         className="mt-4 w-full rounded-lg bg-green-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
                                     >
                                         {subscriptionLoading
                                             ? "Obrada plaćanja..."
                                             : "Plati pretplatu"}
-
                                     </button>
 
                                 </div>
 
                             </div>
-
                         )}
 
                 </section>
 
 
                 {/* ================================= */}
-                {/* STARI PLAYER DASHBOARD */}
+                {/* REZERVACIJE */}
                 {/* ================================= */}
 
-                <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <section className="mt-8 overflow-hidden rounded-xl border border-zinc-200 bg-white">
+
+                    <div className="border-b border-zinc-200 px-6 py-5">
+
+                        <span className="text-xs font-bold tracking-[0.18em] text-green-800">
+                            REZERVACIJE
+                        </span>
 
 
-                    {/* ================================= */}
+                        <h2 className="mt-2 text-2xl font-bold text-zinc-800">
+                            Moje rezervacije
+                        </h2>
+
+
+                        <p className="mt-2 text-sm leading-6 text-zinc-600">
+                            Pregled aktivnih i prethodnih rezervacija
+                            na jednom mestu.
+                        </p>
+
+                    </div>
+
+
                     {/* AKTIVNE REZERVACIJE */}
-                    {/* ================================= */}
 
-                    <section
-                        onClick={() =>
-                            router.push(
-                                "/player-dashboard/reservation"
-                            )
-                        }
+                    <div className="border-b border-zinc-200 px-6 py-7">
 
-                        className="cursor-pointer overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:border-green-300 hover:shadow-md"
-                    >
+                        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
-                        <div className="border-b border-zinc-200 px-6 py-5">
+                            <div>
 
-                            <h2 className="text-xl font-semibold text-zinc-800">
-                                Aktivne rezervacije
-                            </h2>
+                                <h3 className="text-lg font-semibold text-zinc-800">
+                                    Aktivne rezervacije
+                                </h3>
 
 
-                            <p className="mt-1 text-sm text-zinc-500">
-                                Pregled tvojih predstojećih
-                                termina.
-                            </p>
-
-                        </div>
+                                <p className="mt-1 text-sm text-zinc-500">
+                                    Pregled tvojih predstojećih termina.
+                                </p>
 
 
-                        <div className="flex min-h-[145px] flex-col items-center justify-center px-6 py-6">
+                                <p className="mt-4 text-sm text-zinc-600">
+                                    Pogledaj svoje aktivne i predstojeće
+                                    rezervacije.
+                                </p>
 
-                            <p className="mb-5 text-sm text-zinc-500">
-                                Pogledaj svoje aktivne
-                                i predstojeće rezervacije.
-                            </p>
+                            </div>
 
 
-                            <span className="rounded-lg border border-green-700 px-5 py-2.5 text-sm font-semibold text-green-800">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    router.push(
+                                        "/player-dashboard/reservation"
+                                    )
+                                }
+                                className="rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
+                            >
                                 Pogledaj rezervacije
-                            </span>
+                            </button>
 
                         </div>
 
-                    </section>
+                    </div>
 
 
-                    {/* ================================= */}
-                    {/* STANJE NA RACUNU */}
-                    {/* ================================= */}
+                    {/* ISTORIJA REZERVACIJA */}
 
-                    <section
-                        onClick={() =>
-                            router.push(
-                                "/player-dashboard/wallet"
-                            )
-                        }
+                    <div className="px-6 py-7">
 
-                        className="cursor-pointer rounded-xl border border-zinc-200 bg-white px-6 py-5 transition hover:border-green-300 hover:shadow-md"
-                    >
+                        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+                            <div>
+
+                                <h3 className="text-lg font-semibold text-zinc-800">
+                                    Istorija rezervacija
+                                </h3>
+
+
+                                <p className="mt-1 text-sm text-zinc-500">
+                                    Pregled svih prethodnih termina.
+                                </p>
+
+
+                                <p className="mt-4 text-sm leading-6 text-zinc-600">
+                                    Pogledaj sve svoje prethodne
+                                    rezervacije i njihov status.
+                                </p>
+
+                            </div>
+
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    router.push(
+                                        "/player-dashboard/reservation"
+                                    )
+                                }
+                                className="shrink-0 rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"
+                            >
+                                Pogledaj kompletnu istoriju
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                {/* ================================= */}
+                {/* STANJE NA RAČUNU */}
+                {/* ================================= */}
+
+                <section
+                    onClick={() =>
+                        router.push(
+                            "/player-dashboard/wallet"
+                        )
+                    }
+                    className="mt-8 cursor-pointer overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:border-green-300 hover:shadow-md"
+                >
+
+                    <div className="border-b border-zinc-200 px-6 py-5">
+
+                        <span className="text-xs font-bold tracking-[0.18em] text-green-800">
+                            NOVČANIK
+                        </span>
+
+
+                        <h2 className="mt-2 text-2xl font-bold text-zinc-800">
+                            Stanje na računu
+                        </h2>
+
+
+                        <p className="mt-1 text-sm text-zinc-500">
+                            Pregled dostupnog kredita za rezervacije.
+                        </p>
+
+                    </div>
+
+
+                    <div className="px-6 py-7">
 
                         <p className="text-sm text-zinc-500">
-                            Stanje na računu
+                            Trenutno stanje
                         </p>
 
 
-                        <h2 className="mt-3 text-3xl font-bold text-zinc-800">
+                        <h3 className="mt-2 text-3xl font-bold text-zinc-800">
 
                             {walletLoading
                                 ? "Učitavanje..."
@@ -1424,202 +1377,168 @@ export default function PlayerDashboard() {
                                     currency
                                 )}
 
-                        </h2>
+                        </h3>
 
 
                         <p className="mt-2 text-sm text-zinc-500">
-                            Kredit možeš koristiti za
-                            plaćanje rezervacija.
+                            Kredit možeš koristiti za plaćanje rezervacija.
                         </p>
 
 
-                        <div className="mt-6 flex flex-col gap-3">
+                        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
 
                             <button
                                 type="button"
-
                                 onClick={(event) => {
-
                                     event.stopPropagation();
-
 
                                     router.push(
                                         "/player-dashboard/topup"
                                     );
-
                                 }}
-
-                                className="rounded-lg bg-green-700 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-green-800"
+                                className="rounded-lg bg-green-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-green-800 sm:min-w-[220px]"
                             >
                                 Dodaj kredit
                             </button>
 
 
-                            <span className="text-center text-sm font-semibold text-green-800">
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+
+                                    router.push(
+                                        "/player-dashboard/wallet"
+                                    );
+                                }}
+                                className="rounded-lg border border-green-700 px-5 py-3 text-sm font-semibold text-green-800 transition hover:bg-green-50 sm:min-w-[220px]"
+                            >
                                 Pogledaj stanje na računu
-                            </span>
+                            </button>
 
                         </div>
 
-                    </section>
+                    </div>
+
+                </section>
 
 
-                    {/* ================================= */}
-                    {/* ISTORIJA REZERVACIJA */}
-                    {/* ================================= */}
+                {/* ================================= */}
+                {/* LIČNI PODACI */}
+                {/* ================================= */}
 
-                    <section
-                        onClick={() =>
-                            router.push(
-                                "/player-dashboard/reservation"
-                            )
-                        }
+                <section
+                    onClick={() =>
+                        router.push(
+                            "/player-dashboard/profile"
+                        )
+                    }
+                    className="mt-8 cursor-pointer overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:border-green-300 hover:shadow-md"
+                >
 
-                        className="cursor-pointer overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:border-green-300 hover:shadow-md"
-                    >
+                    <div className="border-b border-zinc-200 px-6 py-5">
 
-                        <div className="border-b border-zinc-200 px-6 py-5">
-
-                            <h2 className="text-xl font-semibold text-zinc-800">
-                                Istorija rezervacija
-                            </h2>
+                        <span className="text-xs font-bold tracking-[0.18em] text-green-800">
+                            MOJ PROFIL
+                        </span>
 
 
-                            <p className="mt-1 text-sm text-zinc-500">
-                                Pregled svih prethodnih
-                                termina.
+                        <h2 className="mt-2 text-2xl font-bold text-zinc-800">
+                            Lični podaci
+                        </h2>
+
+
+                        <p className="mt-1 text-sm text-zinc-500">
+                            Podaci povezani sa tvojim nalogom.
+                        </p>
+
+                    </div>
+
+
+                    {/* PODACI - JEDNO PORED DRUGOG */}
+
+                    <div className="grid grid-cols-1 gap-6 px-6 py-7 sm:grid-cols-2 lg:grid-cols-4">
+
+                        {/* IME */}
+
+                        <div>
+
+                            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                                Ime
+                            </p>
+
+
+                            <p className="mt-2 text-sm font-semibold text-zinc-800">
+                                {user?.firstName || "-"}
                             </p>
 
                         </div>
 
 
-                        <div className="px-6 py-6">
+                        {/* PREZIME */}
 
-                            <span className="text-sm font-semibold text-green-800">
-                                Pogledaj kompletnu istoriju
-                            </span>
+                        <div>
 
-                        </div>
-
-                    </section>
+                            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                                Prezime
+                            </p>
 
 
-                    {/* ================================= */}
-                    {/* LICNI PODACI */}
-                    {/* ================================= */}
-
-                    <section
-                        onClick={() =>
-                            router.push(
-                                "/player-dashboard/profile"
-                            )
-                        }
-
-                        className="cursor-pointer overflow-hidden rounded-xl border border-zinc-200 bg-white transition hover:border-green-300 hover:shadow-md lg:col-span-2"
-                    >
-
-                        <div className="border-b border-zinc-200 px-6 py-5">
-
-                            <h2 className="text-xl font-semibold text-zinc-800">
-                                Lični podaci
-                            </h2>
-
-
-                            <p className="mt-1 text-sm text-zinc-500">
-                                Podaci povezani sa tvojim
-                                nalogom.
+                            <p className="mt-2 text-sm font-semibold text-zinc-800">
+                                {user?.lastName || "-"}
                             </p>
 
                         </div>
 
 
-                        <div className="grid grid-cols-1 gap-x-12 gap-y-6 px-6 py-6 sm:grid-cols-2 lg:grid-cols-4">
+                        {/* EMAIL */}
+
+                        <div>
+
+                            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                                Email
+                            </p>
 
 
-                            {/* IME */}
-
-                            <div>
-
-                                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                                    Ime
-                                </p>
-
-
-                                <p className="mt-2 text-sm font-medium text-zinc-800">
-                                    {user?.firstName || "-"}
-                                </p>
-
-                            </div>
-
-
-                            {/* PREZIME */}
-
-                            <div>
-
-                                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                                    Prezime
-                                </p>
-
-
-                                <p className="mt-2 text-sm font-medium text-zinc-800">
-                                    {user?.lastName || "-"}
-                                </p>
-
-                            </div>
-
-
-                            {/* EMAIL */}
-
-                            <div>
-
-                                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                                    Email
-                                </p>
-
-
-                                <p className="mt-2 text-sm font-medium text-zinc-800">
-                                    {user?.email || "-"}
-                                </p>
-
-                            </div>
-
-
-                            {/* GRAD */}
-
-                            <div>
-
-                                <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                                    Grad
-                                </p>
-
-
-                                <p className="mt-2 text-sm font-medium text-zinc-800">
-                                    {user?.city || "-"}
-                                </p>
-
-                            </div>
+                            <p className="mt-2 break-all text-sm font-semibold text-zinc-800">
+                                {user?.email || "-"}
+                            </p>
 
                         </div>
 
 
-                        {/* IZMENA PODATAKA */}
+                        {/* GRAD */}
 
-                        <div className="border-t border-zinc-200 px-6 py-5">
+                        <div>
 
-                            <span className="text-sm font-semibold text-green-800">
-                                Izmeni lične podatke
-                            </span>
+                            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                                Grad
+                            </p>
+
+
+                            <p className="mt-2 text-sm font-semibold text-zinc-800">
+                                {user?.city || "-"}
+                            </p>
 
                         </div>
 
-                    </section>
+                    </div>
 
-                </div>
+
+                    <div className="border-t border-zinc-200 px-6 py-5">
+
+                        <span className="text-sm font-semibold text-green-800">
+                            Izmeni lične podatke
+                        </span>
+
+                    </div>
+
+                </section>
+
+
 
             </section>
 
         </main>
-
     );
-
 }

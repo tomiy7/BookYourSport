@@ -261,12 +261,14 @@ export default function ReservationPage() {
             <PlayerHeader />
 
             <section className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+                <Link
+                    href="/player-dashboard"
+                    className="mb-5 inline-block text-sm font-semibold text-green-700 transition hover:text-green-900 hover:underline"
+                >
+                    ← Nazad na moj nalog
+                </Link>
                 <div className="flex flex-col justify-between gap-6 border-b border-zinc-200 pb-8 sm:flex-row sm:items-end">
                     <div>
-                        <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-green-700">
-                            Moj nalog
-                        </p>
-
                         <h1 className="text-3xl font-bold text-zinc-900">
                             Moje rezervacije
                         </h1>
