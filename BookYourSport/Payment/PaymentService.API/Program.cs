@@ -29,30 +29,36 @@ var jwtSecret = builder.Configuration["Jwt:Secret"]
                 ?? throw new InvalidOperationException(
                     "Jwt:Secret is not configured.");
 
+jwtSecret = jwtSecret.Trim();
+
+var jwtKey = new SymmetricSecurityKey(
+    Encoding.UTF8.GetBytes(jwtSecret)
+)
+{
+    KeyId = "bookyoursport"
+};
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
 
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSecret)),
+                IssuerSigningKey = jwtKey,
 
-            ValidateIssuer = false,
-            ValidateAudience = false,
+                ValidateIssuer = false,
+                ValidateAudience = false,
 
-            // Explicitly tell ASP.NET which claim represents
-            // the authenticated user's ID.
-            NameClaimType = ClaimTypes.NameIdentifier,
+                ValidateLifetime = true,
 
-            // Explicitly tell ASP.NET which claim represents
-            // the user's role.
-            RoleClaimType = ClaimTypes.Role
-        };
+                NameClaimType = ClaimTypes.NameIdentifier,
 
-        // Temporary diagnostic logging for JWT authentication.
+                RoleClaimType = ClaimTypes.Role
+            };
+
         options.Events = new JwtBearerEvents
         {
             OnAuthenticationFailed = context =>
