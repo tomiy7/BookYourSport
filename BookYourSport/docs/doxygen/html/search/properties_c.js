@@ -1,0 +1,11 @@
+var searchData=
+[
+  ['referenceid_0',['ReferenceId',['../classPaymentService_1_1Domain_1_1Entities_1_1Transaction.html#a0061ed2455a18d3ba06900737322b465',1,'PaymentService::Domain::Entities::Transaction']]],
+  ['refreshtoken_1',['refreshtoken',['../classAuthService_1_1API_1_1DTOs_1_1AuthResponseDto.html#ad16a2c91fbe2b37057855d0ccbd0786a',1,'AuthService.API.DTOs.AuthResponseDto.RefreshToken'],['../classAuthService_1_1API_1_1DTOs_1_1RefreshRequestDto.html#abf4c4c9471ba9f7a7f0fea752b2591d2',1,'AuthService.API.DTOs.RefreshRequestDto.RefreshToken']]],
+  ['refreshtokens_2',['RefreshTokens',['../classAuthService_1_1API_1_1Data_1_1AppDbContext.html#ae2eaa595a8d0a9fea46789c84ca888e6',1,'AuthService::API::Data::AppDbContext']]],
+  ['refundcalled_3',['RefundCalled',['../classReservationService_1_1Tests_1_1Fakes_1_1FakePaymentServiceClient.html#a92a643508f87473021574da51282a86e',1,'ReservationService::Tests::Fakes::FakePaymentServiceClient']]],
+  ['reservations_4',['Reservations',['../classReservationService_1_1Infrastructure_1_1Data_1_1ReservationDbContext.html#a5ba450905ebd960c93740492ceefe3df',1,'ReservationService::Infrastructure::Data::ReservationDbContext']]],
+  ['result_5',['Result',['../classPaymentService_1_1Tests_1_1Fakes_1_1FakePaymentProcessor.html#a5d0cd60fb88a87fa38412f1d4cd0cdd7',1,'PaymentService::Tests::Fakes::FakePaymentProcessor']]],
+  ['revokedat_6',['RevokedAt',['../classAuthService_1_1API_1_1Entities_1_1RefreshToken.html#a093ce125bbc8de3edf53098901d65e89',1,'AuthService::API::Entities::RefreshToken']]],
+  ['role_7',['role',['../classPaymentService_1_1Application_1_1DTOs_1_1AuthUserDto.html#a69e4bb63b3e8186fdbb6c82bebea7e25',1,'PaymentService.Application.DTOs.AuthUserDto.Role'],['../classAuthService_1_1API_1_1DTOs_1_1UpdateUserRoleRequestDto.html#a52995ad90e78a18f18034f862634e93b',1,'AuthService.API.DTOs.UpdateUserRoleRequestDto.Role'],['../classAuthService_1_1API_1_1DTOs_1_1UserDetailsResponseDto.html#a51bfe2e201a300aa419371c891315c37',1,'AuthService.API.DTOs.UserDetailsResponseDto.Role'],['../classAuthService_1_1API_1_1DTOs_1_1UserResponseDto.html#a28c79ae7d458cd3503a7719428efbe04',1,'AuthService.API.DTOs.UserResponseDto.Role'],['../classAuthService_1_1API_1_1Entities_1_1User.html#ac029af58208ca20be23e1f2edd242016',1,'AuthService.API.Entities.User.Role']]]
+];

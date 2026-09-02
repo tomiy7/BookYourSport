@@ -1,0 +1,16 @@
+digraph "Services/Reservation/ReservationService.Domain/obj/Debug"
+{
+ // LATEX_PDF_SIZE
+  bgcolor="transparent";
+  edge [fontname=Helvetica,fontsize=10,labelfontname=Helvetica,labelfontsize=10];
+  node [fontname=Helvetica,fontsize=10,shape=box,height=0.2,width=0.4];
+  compound=true
+  subgraph clusterdir_f962405023612407beaf0347e8e43b50 {
+    graph [ bgcolor="#edf0f7", pencolor="grey50", label="obj", fontname=Helvetica,fontsize=10 style="filled,dashed", URL="dir_f962405023612407beaf0347e8e43b50.html",tooltip=""]
+  subgraph clusterdir_441ce53911354ff06870206bd3e4eab5 {
+    graph [ bgcolor="#edf0f7", pencolor="grey25", label="", fontname=Helvetica,fontsize=10 style="filled,bold", URL="dir_441ce53911354ff06870206bd3e4eab5.html",tooltip=""]
+    dir_441ce53911354ff06870206bd3e4eab5 [shape=plaintext, label="Debug"];
+  dir_8c90f1432ebaad92653dfa5d52967b1d [label="net10.0", fillcolor="#a2b4d6", color="grey25", style="filled", URL="dir_8c90f1432ebaad92653dfa5d52967b1d.html",tooltip=""];
+  }
+  }
+}
