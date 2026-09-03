@@ -1,6 +1,7 @@
+
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -67,6 +68,21 @@ function ClubsPageContent() {
     const searchParams = useSearchParams();
 
     const urlQuery = searchParams.get("query") || "";
+    const sortByParams = searchParams.getAll("sortBy");
+    const urlSortBy =
+        sortByParams.length > 0
+            ? sortByParams
+            : [];
+
+    const urlSurfaceTypes =
+        searchParams.getAll("surfaceType");
+    const urlSortKey = urlSortBy.join("|");
+    const urlSurfaceKey =
+        urlSurfaceTypes.join("|");
+    const urlMinPrice =
+        searchParams.get("minPrice") || "";
+    const urlMaxPrice =
+        searchParams.get("maxPrice") || "";
 
     const [searchInput, setSearchInput] =
         useState(urlQuery);
@@ -75,6 +91,49 @@ function ClubsPageContent() {
     const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [filtersOpen, setFiltersOpen] =
+        useState(false);
+
+    const [draftSurfaceTypes, setDraftSurfaceTypes] =
+        useState<string[]>(urlSurfaceTypes);
+
+    const [draftMinPrice, setDraftMinPrice] =
+        useState(urlMinPrice);
+
+    const [draftMaxPrice, setDraftMaxPrice] =
+        useState(urlMaxPrice);
+
+    const [sortOpen, setSortOpen] =
+        useState(false);
+
+    const sortRef =
+        useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        setDraftSurfaceTypes(urlSurfaceTypes);
+        setDraftMinPrice(urlMinPrice);
+        setDraftMaxPrice(urlMaxPrice);
+    }, [urlSurfaceKey, urlMinPrice, urlMaxPrice]);
+
+    useEffect(() => {
+        function handleOutsideClick(event: MouseEvent) {
+            if (
+                sortRef.current &&
+                !sortRef.current.contains(event.target as Node)
+            ) {
+                setSortOpen(false);
+            }
+        }
+
+        document.addEventListener("mousedown", handleOutsideClick);
+
+        return () => {
+            document.removeEventListener(
+                "mousedown",
+                handleOutsideClick
+            );
+        };
+    }, []);
 
     // ==========================================
     // UČITAJ KLUBOVE SA SEARCH API-JA
@@ -95,6 +154,22 @@ function ClubsPageContent() {
 
                 if (urlQuery) {
                     params.set("query", urlQuery);
+                }
+
+                urlSortBy.forEach((sort) =>
+                    params.append("sortBy", sort)
+                );
+
+                urlSurfaceTypes.forEach((surface) =>
+                    params.append("surfaceType", surface)
+                );
+
+                if (urlMinPrice) {
+                    params.set("minPrice", urlMinPrice);
+                }
+
+                if (urlMaxPrice) {
+                    params.set("maxPrice", urlMaxPrice);
                 }
 
                 params.set("page", "1");
@@ -125,7 +200,7 @@ function ClubsPageContent() {
         }
 
         loadClubs();
-    }, [urlQuery]);
+    }, [urlQuery, urlSortKey, urlSurfaceKey, urlMinPrice, urlMaxPrice]);
 
     // ==========================================
     // SEARCH FORM
@@ -141,16 +216,101 @@ function ClubsPageContent() {
         e.preventDefault();
 
         const trimmedQuery = searchInput.trim();
+        const params = new URLSearchParams();
 
         if (trimmedQuery) {
-            router.push(
-                `/clubs?query=${encodeURIComponent(
-                    trimmedQuery
-                )}`
-            );
-        } else {
-            router.push("/clubs");
+            params.set("query", trimmedQuery);
         }
+
+        urlSortBy.forEach((sort) =>
+            params.append("sortBy", sort)
+        );
+
+        urlSurfaceTypes.forEach((surface) =>
+            params.append("surfaceType", surface)
+        );
+
+        if (urlMinPrice) {
+            params.set("minPrice", urlMinPrice);
+        }
+
+        if (urlMaxPrice) {
+            params.set("maxPrice", urlMaxPrice);
+        }
+
+        const queryString = params.toString();
+
+        router.push(
+            queryString
+                ? `/clubs?${queryString}`
+                : "/clubs"
+        );
+    }
+
+    function updateFilters(
+        nextSortBy: string[],
+        nextSurfaceTypes: string[],
+        nextMinPrice: string,
+        nextMaxPrice: string
+    ) {
+        const params = new URLSearchParams();
+
+        if (urlQuery) {
+            params.set("query", urlQuery);
+        }
+
+        nextSortBy.forEach((sort) =>
+            params.append("sortBy", sort)
+        );
+
+        nextSurfaceTypes.forEach((surface) =>
+            params.append("surfaceType", surface)
+        );
+
+        if (nextMinPrice) {
+            params.set("minPrice", nextMinPrice);
+        }
+
+        if (nextMaxPrice) {
+            params.set("maxPrice", nextMaxPrice);
+        }
+
+        const queryString = params.toString();
+
+        router.push(
+            queryString
+                ? `/clubs?${queryString}`
+                : "/clubs"
+        );
+    }
+
+    function applyFilters() {
+        updateFilters(
+            urlSortBy,
+            draftSurfaceTypes,
+            draftMinPrice,
+            draftMaxPrice
+        );
+
+        setFiltersOpen(false);
+    }
+
+    const activeFilterCount =
+        urlSurfaceTypes.length +
+        (urlMinPrice ? 1 : 0) +
+        (urlMaxPrice ? 1 : 0);
+
+    function clearFilters() {
+        setDraftSurfaceTypes([]);
+        setDraftMinPrice("");
+        setDraftMaxPrice("");
+
+        updateFilters(
+            urlSortBy,
+            [],
+            "",
+            ""
+        );
     }
 
     return (
@@ -197,6 +357,404 @@ function ClubsPageContent() {
                             Pretraži
                         </button>
                     </form>
+
+                    <div className="mt-4 flex items-center justify-between border-y border-zinc-200 py-4">
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setFiltersOpen(
+                                    !filtersOpen
+                                )
+                            }
+                            className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:border-green-600 hover:text-green-700"
+                        >
+                            <span className="text-base">
+                                ☰
+                            </span>
+                            Filteri
+                            {activeFilterCount > 0 && (
+                                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-green-700 px-1.5 text-xs font-bold text-white">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                        </button>
+
+                        <div
+                            ref={sortRef}
+                            className="relative"
+                        >
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setSortOpen((open) => !open)
+                                }
+                                className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-700 transition hover:border-green-600"
+                            >
+                                <span>Sortiraj</span>
+                                <span className="text-zinc-400">▾</span>
+                            </button>
+
+                            {sortOpen && (
+                                <div className="absolute right-0 z-20 mt-2 w-44 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 shadow-lg">
+                                    {[
+                                        ["name", "Ime"],
+                                        ["city", "Grad"],
+                                        ["address", "Adresa"],
+                                        ["price", "Cena"],
+                                    ].map(
+                                        ([field, label]) => {
+                                            const currentSort =
+                                                urlSortBy.find(
+                                                    (sort) =>
+                                                        sort.split("_")[0] ===
+                                                        field
+                                                );
+
+                                            const currentDirection =
+                                                currentSort?.split("_")[1] ??
+                                                null;
+
+                                            const toggleDirection = (
+                                                direction: "asc" | "desc"
+                                            ) => {
+                                                const withoutCurrent =
+                                                    urlSortBy.filter(
+                                                        (sort) =>
+                                                            sort.split("_")[0] !==
+                                                            field
+                                                    );
+
+                                                const next =
+                                                    currentDirection ===
+                                                    direction
+                                                        ? withoutCurrent
+                                                        : [
+                                                            ...withoutCurrent,
+                                                            `${field}_${direction}`,
+                                                        ];
+
+                                                updateFilters(
+                                                    next,
+                                                    urlSurfaceTypes,
+                                                    urlMinPrice,
+                                                    urlMaxPrice
+                                                );
+                                            };
+
+                                            return (
+                                                <div
+                                                    key={field}
+                                                    className="grid grid-cols-[64px_24px_24px] items-center justify-center gap-1 py-1"
+                                                >
+                                                    <span className="w-auto text-sm font-medium text-zinc-800">
+                                                        {label}
+                                                    </span>
+
+                                                    <button
+                                                        type="button"
+                                                        title={
+                                                            field === "price"
+                                                                ? "Najniža cena"
+                                                                : "A–Z"
+                                                        }
+                                                        aria-label={
+                                                            field === "price"
+                                                                ? "Najniža cena"
+                                                                : "A–Z"
+                                                        }
+                                                        onClick={() => {
+                                                            toggleDirection("asc");
+                                                            setSortOpen(false);
+                                                        }}
+                                                        className={`flex h-7 w-6 items-center justify-center rounded-md text-lg leading-none ${
+                                                            currentDirection ===
+                                                            "asc"
+                                                                ? "font-bold text-green-700"
+                                                                : "text-zinc-400 hover:text-zinc-800"
+                                                        }`}
+                                                    >
+                                                        ↑
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        title={
+                                                            field === "price"
+                                                                ? "Najviša cena"
+                                                                : "Z–A"
+                                                        }
+                                                        aria-label={
+                                                            field === "price"
+                                                                ? "Najviša cena"
+                                                                : "Z–A"
+                                                        }
+                                                        onClick={() => {
+                                                            toggleDirection("desc");
+                                                            setSortOpen(false);
+                                                        }}
+                                                        className={`flex h-7 w-6 items-center justify-center rounded-md text-lg leading-none ${
+                                                            currentDirection ===
+                                                            "desc"
+                                                                ? "font-bold text-green-700"
+                                                                : "text-zinc-400 hover:text-zinc-800"
+                                                        }`}
+                                                    >
+                                                        ↓
+                                                    </button>
+                                                </div>
+                                            );
+                                        }
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {filtersOpen && (
+                        <div className="mt-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-bold text-zinc-900">
+                                        Filteri
+                                    </h3>
+                                    <p className="mt-1 text-sm text-zinc-500">
+                                        Pronađi teren koji ti najviše odgovara.
+                                    </p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setFiltersOpen(
+                                            false
+                                        )
+                                    }
+                                    className="text-xl text-zinc-400 hover:text-zinc-700"
+                                    aria-label="Zatvori filtere"
+                                >
+                                    ×
+                                </button>
+                            </div>
+
+                            <div className="mt-6 grid gap-6 md:grid-cols-2">
+                                <div>
+                                    <p className="text-sm font-semibold text-zinc-800">
+                                        Podloga
+                                    </p>
+
+                                    <div className="mt-3 grid grid-cols-2 gap-3">
+                                        {[
+                                            [
+                                                "Hard",
+                                                "Beton",
+                                            ],
+                                            [
+                                                "Clay",
+                                                "Šljaka",
+                                            ],
+                                            [
+                                                "Grass",
+                                                "Trava",
+                                            ],
+                                            [
+                                                "Carpet",
+                                                "Tepih",
+                                            ],
+                                        ].map(
+                                            ([
+                                                 value,
+                                                 label,
+                                             ]) => (
+                                                <label
+                                                    key={
+                                                        value
+                                                    }
+                                                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-zinc-200 px-3 py-3 text-sm text-zinc-700 transition hover:border-green-400"
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={draftSurfaceTypes.includes(
+                                                            value
+                                                        )}
+                                                        onChange={(
+                                                            e
+                                                        ) => {
+                                                            setDraftSurfaceTypes((current) =>
+                                                                e.target.checked
+                                                                    ? [...current, value]
+                                                                    : current.filter(
+                                                                        (surface) =>
+                                                                            surface !== value
+                                                                    )
+                                                            );
+                                                        }}
+                                                        className="h-4 w-4 rounded border-zinc-300 text-green-700 focus:ring-green-600"
+                                                    />
+                                                    {
+                                                        label
+                                                    }
+                                                </label>
+                                            )
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <p className="text-sm font-semibold text-zinc-800">
+                                        Cena po satu
+                                    </p>
+
+                                    <div className="mt-3 grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="mb-1 block text-xs text-zinc-500">
+                                                Od
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="100"
+                                                placeholder="npr. 1000"
+                                                value={draftMinPrice}
+                                                onChange={(e) =>
+                                                    setDraftMinPrice(
+                                                        e.target.value
+                                                    )
+                                                }
+                                                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-1 block text-xs text-zinc-500">
+                                                Do
+                                            </label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="100"
+                                                placeholder="npr. 2000"
+                                                value={draftMaxPrice}
+                                                onChange={(e) =>
+                                                    setDraftMaxPrice(
+                                                        e.target.value
+                                                    )
+                                                }
+                                                className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end gap-3 border-t border-zinc-100 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={clearFilters}
+                                    className="rounded-xl border border-zinc-300 px-4 py-2.5 text-sm font-semibold text-zinc-700 hover:border-zinc-400"
+                                >
+                                    Obriši filtere
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={applyFilters}
+                                    className="rounded-xl bg-green-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-800"
+                                >
+                                    Primeni
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeFilterCount > 0 && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span className="mr-1 text-sm text-zinc-500">
+                                Aktivni filteri:
+                            </span>
+
+                            {urlSurfaceTypes.map(
+                                (surface) => (
+                                    <button
+                                        key={surface}
+                                        type="button"
+                                        onClick={() =>
+                                            updateFilters(
+                                                urlSortBy,
+                                                urlSurfaceTypes.filter(
+                                                    (
+                                                        item
+                                                    ) =>
+                                                        item !==
+                                                        surface
+                                                ),
+                                                urlMinPrice,
+                                                urlMaxPrice
+                                            )
+                                        }
+                                        className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-800"
+                                    >
+                                        {surface ===
+                                        "Hard"
+                                            ? "Beton"
+                                            : surface ===
+                                            "Clay"
+                                                ? "Šljaka"
+                                                : surface ===
+                                                "Grass"
+                                                    ? "Trava"
+                                                    : "Tepih"}{" "}
+                                        ×
+                                    </button>
+                                )
+                            )}
+
+                            {urlMinPrice && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        updateFilters(
+                                            urlSortBy,
+                                            urlSurfaceTypes,
+                                            "",
+                                            urlMaxPrice
+                                        )
+                                    }
+                                    className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-800"
+                                >
+                                    Od{" "}
+                                    {urlMinPrice}{" "}
+                                    RSD/h ×
+                                </button>
+                            )}
+
+                            {urlMaxPrice && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        updateFilters(
+                                            urlSortBy,
+                                            urlSurfaceTypes,
+                                            urlMinPrice,
+                                            ""
+                                        )
+                                    }
+                                    className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-800"
+                                >
+                                    Do{" "}
+                                    {urlMaxPrice}{" "}
+                                    RSD/h ×
+                                </button>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={clearFilters}
+                                className="ml-1 text-xs font-semibold text-zinc-500 hover:text-zinc-800"
+                            >
+                                Obriši sve
+                            </button>
+                        </div>
+                    )}
 
                     {urlQuery && (
                         <p className="mt-3 text-sm text-zinc-500">
@@ -309,3 +867,4 @@ export default function ClubsPage() {
         </Suspense>
     );
 }
+

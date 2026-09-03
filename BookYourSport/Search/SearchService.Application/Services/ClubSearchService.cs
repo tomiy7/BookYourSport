@@ -16,6 +16,7 @@ public class ClubSearchService : IClubSearchService
         _reservationServiceClient = reservationServiceClient;
         _geocodingService = geocodingService;
     }
+
     private static double CalculateDistanceKm(
         double latitude1,
         double longitude1,
@@ -74,8 +75,9 @@ public class ClubSearchService : IClubSearchService
                 Courts = c.Courts
                     .Where(court => court.IsActive)
                     .Where(court =>
-                        !request.SurfaceType.HasValue ||
-                        court.SurfaceType == request.SurfaceType.Value)
+                        request.SurfaceTypes == null ||
+                        request.SurfaceTypes.Count == 0 ||
+                        request.SurfaceTypes.Contains(court.SurfaceType))
                     .Where(court =>
                         !request.IsIndoor.HasValue ||
                         court.IsIndoor == request.IsIndoor.Value)
@@ -129,6 +131,7 @@ public class ClubSearchService : IClubSearchService
                 }
             }
         }
+
         if (request.MaxDistanceKm.HasValue)
         {
             filteredResults = filteredResults
@@ -137,23 +140,114 @@ public class ClubSearchService : IClubSearchService
                     x.DistanceKm.Value <= request.MaxDistanceKm.Value);
         }
 
-        filteredResults = request.SortBy?.ToLowerInvariant() switch
+        var sortCriteria = request.SortBy?
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.ToLowerInvariant())
+            .ToList() ?? new List<string>();
+
+        if (sortCriteria.Count == 0)
         {
-            "name" => filteredResults.OrderBy(x => x.Club.Name),
+            sortCriteria.Add("name_asc");
+        }
 
-            "price_asc" => filteredResults.OrderBy(x =>
-                x.Courts
-                    .Select(court => court.PricePerHour.Amount)
-                    .Min()),
+        IOrderedEnumerable<FilteredClub>? orderedResults = null;
 
-            "price_desc" => filteredResults.OrderByDescending(x =>
-                x.Courts
-                    .Select(court => court.PricePerHour.Amount)
-                    .Min()),
-            "distance" => filteredResults
-                .OrderBy(x => x.DistanceKm ?? double.MaxValue),
-            _ => filteredResults.OrderBy(x => x.Club.Name)
-        };
+        foreach (var sort in sortCriteria)
+        {
+            if (orderedResults == null)
+            {
+                orderedResults = sort switch
+                {
+                    "name_asc" => filteredResults
+                        .OrderBy(x => x.Club.Name),
+
+                    "name_desc" => filteredResults
+                        .OrderByDescending(x => x.Club.Name),
+
+                    "city_asc" => filteredResults
+                        .OrderBy(x => x.Club.Address.City),
+
+                    "city_desc" => filteredResults
+                        .OrderByDescending(x => x.Club.Address.City),
+
+                    "address_asc" => filteredResults
+                        .OrderBy(x => x.Club.Address.Street)
+                        .ThenBy(x => x.Club.Address.StreetNumber),
+
+                    "address_desc" => filteredResults
+                        .OrderByDescending(x => x.Club.Address.Street)
+                        .ThenByDescending(x => x.Club.Address.StreetNumber),
+
+                    "price_asc" => filteredResults
+                        .OrderBy(x =>
+                            x.Courts
+                                .Select(court => court.PricePerHour.Amount)
+                                .Min()),
+
+                    "price_desc" => filteredResults
+                        .OrderByDescending(x =>
+                            x.Courts
+                                .Select(court => court.PricePerHour.Amount)
+                                .Min()),
+
+                    "distance_asc" => filteredResults
+                        .OrderBy(x => x.DistanceKm ?? double.MaxValue),
+
+                    "distance_desc" => filteredResults
+                        .OrderByDescending(x => x.DistanceKm ?? double.MinValue),
+
+                    _ => filteredResults
+                        .OrderBy(x => x.Club.Name)
+                };
+            }
+            else
+            {
+                orderedResults = sort switch
+                {
+                    "name_asc" => orderedResults
+                        .ThenBy(x => x.Club.Name),
+
+                    "name_desc" => orderedResults
+                        .ThenByDescending(x => x.Club.Name),
+
+                    "city_asc" => orderedResults
+                        .ThenBy(x => x.Club.Address.City),
+
+                    "city_desc" => orderedResults
+                        .ThenByDescending(x => x.Club.Address.City),
+
+                    "address_asc" => orderedResults
+                        .ThenBy(x => x.Club.Address.Street)
+                        .ThenBy(x => x.Club.Address.StreetNumber),
+
+                    "address_desc" => orderedResults
+                        .ThenByDescending(x => x.Club.Address.Street)
+                        .ThenByDescending(x => x.Club.Address.StreetNumber),
+
+                    "price_asc" => orderedResults
+                        .ThenBy(x =>
+                            x.Courts
+                                .Select(court => court.PricePerHour.Amount)
+                                .Min()),
+
+                    "price_desc" => orderedResults
+                        .ThenByDescending(x =>
+                            x.Courts
+                                .Select(court => court.PricePerHour.Amount)
+                                .Min()),
+
+                    "distance_asc" => orderedResults
+                        .ThenBy(x => x.DistanceKm ?? double.MaxValue),
+
+                    "distance_desc" => orderedResults
+                        .ThenByDescending(x => x.DistanceKm ?? double.MinValue),
+
+                    _ => orderedResults
+                };
+            }
+        }
+
+        filteredResults = orderedResults!;
 
         var totalCount = filteredResults.Count();
 
@@ -183,6 +277,7 @@ public class ClubSearchService : IClubSearchService
             TotalPages = (int)Math.Ceiling((double)totalCount / pageSize)
         };
     }
+
     private static SearchClubDto MapToSearchDto(
       ReservationClubDto club,
       IEnumerable<ReservationCourtDto> courts,
