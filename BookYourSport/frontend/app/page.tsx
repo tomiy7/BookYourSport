@@ -1,9 +1,37 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
 import Link from "next/link";
 import styles from "./page.module.css";
 import Footer from "./Footer";
 import Header from "./Header";
 
 export default function Home() {
+    const router = useRouter();
+
+    const [query, setQuery] = useState("");
+
+    function handleSearchSubmit(
+        e: React.FormEvent
+    ) {
+        e.preventDefault();
+
+        const trimmedQuery = query.trim();
+
+        if (!trimmedQuery) {
+            router.push("/clubs");
+            return;
+        }
+
+        router.push(
+            `/clubs?query=${encodeURIComponent(
+                trimmedQuery
+            )}`
+        );
+    }
+
     return (
         <main className={styles.page}>
             <Header />
@@ -24,11 +52,33 @@ export default function Home() {
                         rezerviši svoj sledeći termin brzo i jednostavno.
                     </p>
 
+                    <form
+                        onSubmit={handleSearchSubmit}
+                        className={styles.searchForm}
+                    >
+                        <input
+                            type="text"
+                            value={query}
+                            onChange={(e) =>
+                                setQuery(e.target.value)
+                            }
+                            placeholder="Pretraži klub ili lokaciju..."
+                            className={styles.searchInput}
+                        />
+
+                        <button
+                            type="submit"
+                            className={styles.searchButton}
+                        >
+                            Pretraži
+                        </button>
+                    </form>
+
                     <Link
                         href="/clubs"
-                        className={styles.findCourtButton}
+                        className={styles.browseAllLink}
                     >
-                        Pronađi teniski teren
+                        Pregledaj sve klubove
 
                         <span>
                             →

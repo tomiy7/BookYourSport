@@ -55,6 +55,11 @@ public class ClubSearchService : IClubSearchService
         IEnumerable<FilteredClub> filteredResults = clubs
             .Where(c => c.IsActive)
             .Where(c =>
+                string.IsNullOrWhiteSpace(request.Query) ||
+                c.Name.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
+                c.Address.City.Contains(request.Query, StringComparison.OrdinalIgnoreCase) ||
+                c.Address.Street.Contains(request.Query, StringComparison.OrdinalIgnoreCase))
+            .Where(c =>
                 string.IsNullOrWhiteSpace(request.Name) ||
                 c.Name.Contains(request.Name, StringComparison.OrdinalIgnoreCase))
             .Where(c =>
@@ -222,4 +227,3 @@ public class ClubSearchService : IClubSearchService
         public double? Longitude { get; set; }
     }
 }
-

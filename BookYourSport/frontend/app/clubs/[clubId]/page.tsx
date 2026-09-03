@@ -343,7 +343,7 @@ export default function ClubDetailsPage() {
                 await fetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${clubId}/courts/${selectedCourtId}/availability?date=${selectedDate}`
                 );
-            
+
             if (!response.ok) {
                 throw new Error();
             }

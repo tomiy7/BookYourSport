@@ -4,6 +4,8 @@ namespace SearchService.Application.DTOs;
 
 public class SearchClubsRequestDto
 {
+    public string? Query { get; set; }
+
     public string? Name { get; set; }
     public string? City { get; set; }
     public string? Street { get; set; }
