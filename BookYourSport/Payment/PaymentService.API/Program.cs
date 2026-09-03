@@ -306,4 +306,13 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider
+        .GetRequiredService<PaymentDbContext>();
+
+    await db.Database.MigrateAsync();
+}
+
+
 app.Run();

@@ -1,4 +1,8 @@
-import { getAccessToken, refreshAccessToken, logout } from "./auth";
+import {
+    getAccessToken,
+    refreshAccessToken,
+    logout,
+} from "./auth";
 
 export async function apiFetch(
     url: string,
@@ -6,13 +10,23 @@ export async function apiFetch(
 ): Promise<Response> {
     let accessToken = getAccessToken();
 
-    const makeRequest = (token: string | null) => {
-        const headers = new Headers(options.headers);
+    const makeRequest = (
+        token: string | null
+    ) => {
+        const headers = new Headers(
+            options.headers
+        );
 
-        headers.set("Content-Type", "application/json");
+        headers.set(
+            "Content-Type",
+            "application/json"
+        );
 
         if (token) {
-            headers.set("Authorization", `Bearer ${token}`);
+            headers.set(
+                "Authorization",
+                `Bearer ${token}`
+            );
         }
 
         return fetch(url, {
@@ -21,22 +35,39 @@ export async function apiFetch(
         });
     };
 
-    let response = await makeRequest(accessToken);
+    let response =
+        await makeRequest(accessToken);
 
-    // Ako je access token istekao, pokušaj refresh
-    if (response.status === 401) {
+    // Ako je access token istekao ili je
+    // korisnik promenio rolu, pokušaj refresh.
+    if (
+        response.status === 401 ||
+        response.status === 403
+    ) {
         try {
-            accessToken = await refreshAccessToken();
+            const refreshedToken =
+                await refreshAccessToken();
 
-            if (!accessToken) {
-                logout();
+            if (!refreshedToken) {
+                if (response.status === 401) {
+                    logout();
+                }
+
                 return response;
             }
 
-            // Ponovi ORIGINALNI request sa novim tokenom
-            response = await makeRequest(accessToken);
+            accessToken = refreshedToken;
+
+            // Ponovi ORIGINALNI request
+            // samo jednom sa novim tokenom.
+            response =
+                await makeRequest(
+                    accessToken
+                );
         } catch {
-            logout();
+            if (response.status === 401) {
+                logout();
+            }
         }
     }
 

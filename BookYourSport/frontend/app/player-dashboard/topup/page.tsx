@@ -96,7 +96,7 @@ export default function TopUpPage() {
 
             <section className="mx-auto w-full max-w-3xl px-6 py-10">
                 <Link
-                    href="/player-dashboard/wallet"
+                    href="/player-dashboard/"
                     className="text-sm font-semibold text-green-800 transition hover:text-green-950"
                 >
                     ← Nazad na moj nalog
