@@ -167,6 +167,18 @@ export default function UsersPage() {
     const [sortOption, setSortOption] =
         useState<SortOption>("firstNameAsc");
 
+    const [filtersOpen, setFiltersOpen] =
+        useState(false);
+
+    const [sortDirections, setSortDirections] =
+        useState<{
+            firstName?: "asc" | "desc";
+            lastName?: "asc" | "desc";
+            email?: "asc" | "desc";
+        }>({
+            firstName: "asc",
+        });
+
     async function loadUsers() {
         try {
             setLoading(true);
@@ -276,81 +288,129 @@ export default function UsersPage() {
             );
         });
 
+        const activeSorts: Array<
+            [
+                "firstName" | "lastName" | "email",
+                "asc" | "desc"
+            ]
+        > = [];
+
+        if (sortDirections.firstName) {
+            activeSorts.push([
+                "firstName",
+                sortDirections.firstName,
+            ]);
+        }
+
+        if (sortDirections.lastName) {
+            activeSorts.push([
+                "lastName",
+                sortDirections.lastName,
+            ]);
+        }
+
+        if (sortDirections.email) {
+            activeSorts.push([
+                "email",
+                sortDirections.email,
+            ]);
+        }
+
         return [...result].sort((a, b) => {
-            let valueA = "";
-            let valueB = "";
+            for (const [field, direction] of activeSorts) {
+                const valueA =
+                    normalizeText(
+                        field === "firstName"
+                            ? a.firstName
+                            : field === "lastName"
+                            ? a.lastName
+                            : a.email
+                    );
 
-            switch (sortOption) {
-                case "firstNameAsc":
-                case "firstNameDesc":
-                    valueA =
-                        normalizeText(
-                            a.firstName
-                        );
+                const valueB =
+                    normalizeText(
+                        field === "firstName"
+                            ? b.firstName
+                            : field === "lastName"
+                            ? b.lastName
+                            : b.email
+                    );
 
-                    valueB =
-                        normalizeText(
-                            b.firstName
-                        );
+                const comparison =
+                    valueA.localeCompare(
+                        valueB,
+                        "sr-Latn-RS"
+                    );
 
-                    break;
-
-                case "lastNameAsc":
-                case "lastNameDesc":
-                    valueA =
-                        normalizeText(
-                            a.lastName
-                        );
-
-                    valueB =
-                        normalizeText(
-                            b.lastName
-                        );
-
-                    break;
-
-                case "emailAsc":
-                case "emailDesc":
-                    valueA =
-                        normalizeText(
-                            a.email
-                        );
-
-                    valueB =
-                        normalizeText(
-                            b.email
-                        );
-
-                    break;
+                if (comparison !== 0) {
+                    return direction === "desc"
+                        ? -comparison
+                        : comparison;
+                }
             }
 
-            const comparison =
-                valueA.localeCompare(
-                    valueB,
-                    "sr-Latn-RS"
-                );
-
-            if (
-                sortOption.endsWith(
-                    "Desc"
-                )
-            ) {
-                return -comparison;
-            }
-
-            return comparison;
+            return 0;
         });
     }, [
         users,
         search,
         roleFilter,
         sortOption,
+        sortDirections,
     ]);
 
     function resetFilters() {
         setSearch("");
         setRoleFilter("All");
         setSortOption("firstNameAsc");
+        setSortDirections({
+            firstName: "asc",
+        });
+    }
+
+    function toggleSortDirection(
+        field:
+            | "firstName"
+            | "lastName"
+            | "email",
+        direction: "asc" | "desc"
+    ) {
+        setSortDirections((current) => {
+            const next = { ...current };
+
+            if (next[field] === direction) {
+                delete next[field];
+            } else {
+                next[field] = direction;
+            }
+
+            return next;
+        });
+
+        const firstNameDirection =
+            field === "firstName"
+                ? sortDirections.firstName === "asc" &&
+                  direction === "asc"
+                    ? undefined
+                    : sortDirections.firstName === "desc" &&
+                      direction === "desc"
+                    ? undefined
+                    : direction
+                : sortDirections.firstName;
+
+        if (firstNameDirection) {
+            setSortOption(
+                firstNameDirection === "asc"
+                    ? "firstNameAsc"
+                    : "firstNameDesc"
+            );
+        } else if (
+            field === "firstName" &&
+            !sortDirections.lastName &&
+            !sortDirections.email
+        ) {
+            setSortOption("firstNameAsc");
+        }
     }
 
     return (
@@ -384,19 +444,11 @@ export default function UsersPage() {
                     </div>
                 )}
 
-                {/* SEARCH + ROLE + SORT */}
+                {/* SEARCH + FILTERS + SORT */}
 
-                <div className="mt-8 rounded-xl border border-zinc-200 bg-white p-5">
-
-                    <div className="grid gap-4 lg:grid-cols-3">
-
-                        {/* SEARCH */}
-
-                        <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-700">
-                                Pretraga
-                            </label>
-
+                <div className="mt-8">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                        <div className="flex-1">
                             <input
                                 type="text"
                                 value={search}
@@ -406,103 +458,274 @@ export default function UsersPage() {
                                     )
                                 }
                                 placeholder="Ime, prezime, email ili grad"
-                                className="w-full rounded-lg border border-zinc-200 px-4 py-2.5 text-sm outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                                className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
                             />
                         </div>
 
-                        {/* ROLE FILTER */}
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setFiltersOpen(
+                                    !filtersOpen
+                                )
+                            }
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-semibold text-zinc-800 transition hover:border-green-600 hover:text-green-700"
+                        >
+                            <span className="text-base">
+                                ☰
+                            </span>
+                            Filteri
+                            {roleFilter !== "All" && (
+                                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-green-700 px-1.5 text-xs font-bold text-white">
+                                    1
+                                </span>
+                            )}
+                        </button>
 
-                        <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-700">
-                                Rola
-                            </label>
+                        <div className="relative">
+                            <details className="group">
+                                <summary className="flex cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-700">
+                                    <span>
+                                        Sortiraj
+                                    </span>
+                                    <span className="text-zinc-400">
+                                        ▾
+                                    </span>
+                                </summary>
 
-                            <select
-                                value={roleFilter}
-                                onChange={(event) =>
-                                    setRoleFilter(
-                                        event.target.value
-                                    )
-                                }
-                                className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
-                            >
-                                <option value="All">
-                                    Sve role
-                                </option>
+                                <div className="absolute right-0 z-30 mt-2 w-52 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 shadow-lg">
+                                    {[
+                                        [
+                                            "firstName",
+                                            "Ime",
+                                        ],
+                                        [
+                                            "lastName",
+                                            "Prezime",
+                                        ],
+                                        [
+                                            "email",
+                                            "Email",
+                                        ],
+                                    ].map(
+                                        (
+                                            [
+                                                field,
+                                                label,
+                                            ]
+                                        ) => {
+                                            const currentDirection =
+                                                sortDirections[
+                                                    field as
+                                                        | "firstName"
+                                                        | "lastName"
+                                                        | "email"
+                                                ];
 
-                                <option value="Player">
-                                    Player
-                                </option>
+                                            return (
+                                                <div
+                                                    key={
+                                                        field
+                                                    }
+                                                    className="grid grid-cols-[1fr_28px_28px] items-center gap-1 py-1"
+                                                >
+                                                    <span className="text-sm font-medium text-zinc-800">
+                                                        {
+                                                            label
+                                                        }
+                                                    </span>
 
-                                <option value="Club">
-                                    Club Owner
-                                </option>
+                                                    <button
+                                                        type="button"
+                                                        title="A–Z"
+                                                        aria-label={`${label} A–Z`}
+                                                        onClick={() =>
+                                                            toggleSortDirection(
+                                                                field as
+                                                                    | "firstName"
+                                                                    | "lastName"
+                                                                    | "email",
+                                                                "asc"
+                                                            )
+                                                        }
+                                                        className={`flex h-7 w-7 items-center justify-center rounded-md text-lg leading-none ${
+    currentDirection ===
+    "asc"
+        ? "font-bold text-green-700"
+        : "text-zinc-400 hover:text-zinc-800"
+}`}
+                                                    >
+                                                        ↑
+                                                    </button>
 
-                                <option value="Admin">
-                                    Admin
-                                </option>
-                            </select>
+                                                    <button
+                                                        type="button"
+                                                        title="Z–A"
+                                                        aria-label={`${label} Z–A`}
+                                                        onClick={() =>
+                                                            toggleSortDirection(
+                                                                field as
+                                                                    | "firstName"
+                                                                    | "lastName"
+                                                                    | "email",
+                                                                "desc"
+                                                            )
+                                                        }
+                                                        className={`flex h-7 w-7 items-center justify-center rounded-md text-lg leading-none ${
+    currentDirection ===
+    "desc"
+        ? "font-bold text-green-700"
+        : "text-zinc-400 hover:text-zinc-800"
+}`}
+                                                    >
+                                                        ↓
+                                                    </button>
+                                                </div>
+                                            );
+                                        }
+                                    )}
+                                </div>
+                            </details>
                         </div>
-
-                        {/* SORT */}
-
-                        <div>
-                            <label className="mb-2 block text-sm font-semibold text-zinc-700">
-                                Sortiraj
-                            </label>
-
-                            <select
-                                value={sortOption}
-                                onChange={(event) =>
-                                    setSortOption(
-                                        event.target
-                                            .value as SortOption
-                                    )
-                                }
-                                className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:border-green-600 focus:ring-4 focus:ring-green-100"
-                            >
-                                <option value="firstNameAsc">
-                                    Ime A → Z
-                                </option>
-
-                                <option value="firstNameDesc">
-                                    Ime Z → A
-                                </option>
-
-                                <option value="lastNameAsc">
-                                    Prezime A → Z
-                                </option>
-
-                                <option value="lastNameDesc">
-                                    Prezime Z → A
-                                </option>
-
-                                <option value="emailAsc">
-                                    Email A → Z
-                                </option>
-
-                                <option value="emailDesc">
-                                    Email Z → A
-                                </option>
-                            </select>
-                        </div>
-
                     </div>
 
-                    {/* RESET */}
+                    {filtersOpen && (
+                        <div className="mt-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-semibold text-zinc-800">
+                                        Filteri
+                                    </p>
+                                    <p className="mt-1 text-xs text-zinc-500">
+                                        Filtriraj korisnike po roli.
+                                    </p>
+                                </div>
 
-                    <div className="mt-5 flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setFiltersOpen(
+                                            false
+                                        )
+                                    }
+                                    className="text-lg text-zinc-400 hover:text-zinc-700"
+                                    aria-label="Zatvori filtere"
+                                >
+                                    ×
+                                </button>
+                            </div>
 
+                            <div className="mt-4 flex flex-wrap items-center gap-2">
+                                {[
+                                    [
+                                        "All",
+                                        "Sve role",
+                                    ],
+                                    [
+                                        "Player",
+                                        "Player",
+                                    ],
+                                    [
+                                        "Club",
+                                        "Club Owner",
+                                    ],
+                                    [
+                                        "Admin",
+                                        "Admin",
+                                    ],
+                                ].map(
+                                    ([
+                                        value,
+                                        label,
+                                    ]) => (
+                                        <button
+                                            key={
+                                                value
+                                            }
+                                            type="button"
+                                            onClick={() =>
+                                                setRoleFilter(
+                                                    value
+                                                )
+                                            }
+                                            className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+    roleFilter ===
+    value
+        ? "border-green-600 bg-green-50 font-semibold text-green-700"
+        : "border-zinc-200 bg-white text-zinc-700 hover:border-green-400"
+}`}
+                                        >
+                                            {label}
+                                        </button>
+                                    )
+                                )}
+
+                                {roleFilter !==
+                                    "All" && (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setRoleFilter(
+                                                "All"
+                                            )
+                                        }
+                                        className="ml-1 text-xs font-semibold text-zinc-500 hover:text-zinc-800"
+                                    >
+                                        Obriši filter
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {(roleFilter !== "All" ||
+                        search) && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setSearch(
+                                            ""
+                                        )
+                                    }
+                                    className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-800"
+                                >
+                                    Pretraga:{" "}
+                                    {search} ×
+                                </button>
+                            )}
+
+                            {roleFilter !==
+                                "All" && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setRoleFilter(
+                                            "All"
+                                        )
+                                    }
+                                    className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-800"
+                                >
+                                    Rola:{" "}
+                                    {formatRole(
+                                        roleFilter
+                                    )}{" "}
+                                    ×
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="mt-4 flex justify-end">
                         <button
                             type="button"
                             onClick={resetFilters}
-                            className="rounded-lg border border-zinc-300 bg-white px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+                            className="text-xs font-semibold text-zinc-500 hover:text-zinc-800"
                         >
                             Resetuj filtere
                         </button>
-
                     </div>
-
                 </div>
 
                 {/* LOADING */}
@@ -645,8 +868,8 @@ export default function UsersPage() {
 
                                                         <span
                                                             className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold ${approvalStatusClass(
-                                                                user.approvalStatus
-                                                            )}`}
+    user.approvalStatus
+)}`}
                                                         >
                                                             {formatApprovalStatus(
                                                                 user.approvalStatus
