@@ -6,71 +6,139 @@ namespace PaymentService.Application.Commands.PaySubscription;
 
 public class PaySubscriptionHandler
 {
-    private readonly IPaymentProcessor _paymentProcessor;
     private readonly IAuthServiceClient _authServiceClient;
     private readonly IContractRepository _contractRepository;
+    private readonly ICreditAccountRepository _creditAccountRepository;
+    private readonly SubscriptionSettings _subscriptionSettings;
 
     public PaySubscriptionHandler(
-        IPaymentProcessor paymentProcessor,
         IAuthServiceClient authServiceClient,
-        IContractRepository contractRepository)
+        IContractRepository contractRepository,
+        ICreditAccountRepository creditAccountRepository,
+        SubscriptionSettings subscriptionSettings)
     {
-        _paymentProcessor = paymentProcessor;
         _authServiceClient = authServiceClient;
         _contractRepository = contractRepository;
+        _creditAccountRepository = creditAccountRepository;
+        _subscriptionSettings = subscriptionSettings;
     }
 
     public async Task<PaymentResult> Handle(
         PaySubscriptionCommand command)
     {
-        // Validate the subscription amount before processing the payment.
-        if (command.Amount <= 0)
-            throw new ArgumentException(
-                "Subscription amount must be greater than zero.",
-                nameof(command.Amount));
+        // =========================================================
+        // SUBSCRIPTION PRICE
+        // =========================================================
+        // Cena je definisana ISKLJUČIVO na backendu.
+        // Frontend ne može da odredi cenu pretplate.
+        var amount = _subscriptionSettings.Amount;
+        var currency = _subscriptionSettings.Currency;
 
-        var contract = await _contractRepository.GetByUserIdAsync(
-            command.UserId);
+        if (amount <= 0)
+        {
+            throw new InvalidOperationException(
+                "Subscription amount must be greater than zero.");
+        }
+
+        if (string.IsNullOrWhiteSpace(currency))
+        {
+            throw new InvalidOperationException(
+                "Subscription currency is not configured.");
+        }
+
+        // =========================================================
+        // SIGNED CONTRACT
+        // =========================================================
+
+        var contract =
+            await _contractRepository.GetSignedByUserIdAsync(
+                command.UserId);
 
         if (contract == null)
         {
             throw new InvalidOperationException(
-                "Contract was not found.");
+                "A signed contract was not found.");
         }
 
-        // Subscription payment is allowed only after the contract has been signed.
-        if (contract.Status != ContractStatus.Signed)
+        // =========================================================
+        // USER
+        // =========================================================
+
+        var user =
+            await _authServiceClient.GetUserAsync(
+                command.UserId);
+
+        if (user == null)
         {
             throw new InvalidOperationException(
-                "Contract must be signed before subscription payment.");
+                "User was not found.");
         }
-        
-        var user = await _authServiceClient.GetUserAsync(command.UserId);
-        if (user == null)
-            throw new InvalidOperationException("User was not found.");
-        
+
         if (user.ApprovalStatus != AuthApprovalStatus.Approved)
+        {
             throw new InvalidOperationException(
                 "User must be approved by an admin before subscription payment.");
-        
-        // Process the subscription payment only after all prerequisites are satisfied.
-        var result = await _paymentProcessor.ProcessPaymentAsync(
-            command.UserId,
-            command.Amount,
-            command.Currency);
+        }
 
-        // Do not approve the subscription if the payment was unsuccessful.
-        if (!result.IsSuccessful)
-            return result;
+        // =========================================================
+        // WALLET
+        // =========================================================
 
-        // Notify Auth Service so the club owner's status can be updated.
+        var creditAccount =
+            await _creditAccountRepository.GetByUserIdAsync(
+                command.UserId);
+
+        if (creditAccount == null)
+        {
+            throw new InvalidOperationException(
+                "Credit account was not found.");
+        }
+
+        // =========================================================
+        // BALANCE CHECK
+        // =========================================================
+
+        var availableBalance = creditAccount.Balance;
+
+        if (availableBalance < amount)
+        {
+            throw new InvalidOperationException(
+                $"Nedovoljno sredstava za plaćanje pretplate. " +
+                $"Potrebno je {amount:N2} {currency}, " +
+                $"a trenutno imaš {availableBalance:N2} {currency}.");
+        }
+
+        // =========================================================
+        // CHARGE WALLET
+        // =========================================================
+        // Ovde se stvarno skida novac sa korisničkog računa.
+        //
+        // Koristimo ID ugovora kao reference jer je ovo
+        // plaćanje pretplate, a ne rezervacije.
+
+        var transaction = creditAccount.Charge(
+            amount,
+            contract.Id);
+
+        await _creditAccountRepository.SaveAsync(
+            creditAccount);
+
+        // =========================================================
+        // SUBSCRIPTION PAYMENT SUCCESS
+        // =========================================================
+        // PaymentId je ID stvarne wallet transakcije.
+
         await _authServiceClient.NotifySubscriptionPaidAsync(
             command.UserId,
-            result.PaymentId,
+            transaction.Id,
             contract.Id,
-            command.Amount,
-            command.Currency);
+            amount,
+            currency);
 
-        return result;
+        return new PaymentResult
+        {
+            IsSuccessful = true,
+            PaymentId = transaction.Id
+        };
     }
 }

@@ -58,19 +58,6 @@ public class CreditAccount
                 "Reference ID cannot be empty.",
                 nameof(referenceId));
 
-        var existingTransaction = _transactions.FirstOrDefault(t =>
-            t.Type == TransactionType.ReservationCharge &&
-            t.ReferenceId == referenceId);
-
-        if (existingTransaction is not null)
-        {
-            if (existingTransaction.Amount != amount)
-                throw new InvalidOperationException(
-                    "Reservation has already been charged with a different amount.");
-
-            return existingTransaction;
-        }
-
         if (Balance < amount)
             throw new InvalidOperationException(
                 "Insufficient credit.");
@@ -80,6 +67,34 @@ public class CreditAccount
         var transaction = new Transaction(
             amount,
             TransactionType.ReservationCharge,
+            referenceId);
+
+        _transactions.Add(transaction);
+
+        return transaction;
+    }
+    
+    public Transaction ChargeSubscription(decimal amount, Guid referenceId)
+    {
+        if (amount <= 0)
+            throw new ArgumentException(
+                "Charge amount must be greater than zero.",
+                nameof(amount));
+
+        if (referenceId == Guid.Empty)
+            throw new ArgumentException(
+                "Reference ID cannot be empty.",
+                nameof(referenceId));
+
+        if (Balance < amount)
+            throw new InvalidOperationException(
+                "Insufficient credit.");
+
+        Balance -= amount;
+
+        var transaction = new Transaction(
+            amount,
+            TransactionType.SubscriptionCharge,
             referenceId);
 
         _transactions.Add(transaction);

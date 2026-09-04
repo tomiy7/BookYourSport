@@ -1,4 +1,5 @@
 include:
+  - ./BookYourSport/ApiGateway/docker-compose.yml
   - ./BookYourSport/Payment/docker-compose.yml
   - ./BookYourSport/Search/docker-compose.yml
   - ./BookYourSport/Security/Auth/docker-compose.yml

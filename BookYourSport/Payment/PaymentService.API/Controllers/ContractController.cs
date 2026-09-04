@@ -23,87 +23,186 @@ public class ContractController : ControllerBase
         _signContractHandler = signContractHandler;
     }
 
-    // Generates a new contract for the specified user.
+
+    // ==================================================
+    // GENERATE CONTRACT
+    // ==================================================
+
     [HttpPost("generate")]
     public async Task<IActionResult> GenerateContract(
         GenerateContractCommand command)
     {
-        var contract = await _handler.Handle(command);
+        // Do not generate another contract if one already exists.
+        var existingContract =
+            await _contractRepository.GetByUserIdAsync(
+                command.UserId);
 
-        return Ok(new
+        if (existingContract != null)
         {
-            contractId = contract.Id,
-            userId = contract.UserId,
-            documentPath = contract.DocumentPath,
-            status = contract.Status,
-            createdAt = contract.CreatedAt
-        });
-    }
+            return Ok(new
+            {
+                contractId = existingContract.Id,
+                userId = existingContract.UserId,
+                documentPath = existingContract.DocumentPath,
 
-    // Retrieves contract information by contract ID.
-    [HttpGet("{contractId}")]
-    public async Task<IActionResult> GetContract(
-        Guid contractId)
-    {
-        var contract = await _contractRepository.GetByIdAsync(contractId);
+                status =
+                    existingContract.Status.ToString(),
 
-        if (contract == null)
-        {
-            return NotFound();
+                createdAt = existingContract.CreatedAt,
+                signedAt = existingContract.SignedAt
+            });
         }
 
+        if (string.IsNullOrWhiteSpace(command.Currency))
+        {
+            command.Currency = "RSD";
+        }
+
+        var contract =
+            await _handler.Handle(command);
+
         return Ok(new
         {
             contractId = contract.Id,
             userId = contract.UserId,
             documentPath = contract.DocumentPath,
-            status = contract.Status,
+
+            status =
+                contract.Status.ToString(),
+
             createdAt = contract.CreatedAt,
             signedAt = contract.SignedAt
         });
     }
 
-    // Returns the generated contract PDF for download.
-    [HttpGet("{contractId}/document")]
-    public async Task<IActionResult> GetContractDocument(
+
+    // ==================================================
+    // GET CONTRACT BY CONTRACT ID
+    // ==================================================
+
+    [HttpGet("{contractId}")]
+    public async Task<IActionResult> GetContract(
         Guid contractId)
     {
-        var contract = await _contractRepository.GetByIdAsync(contractId);
+        var contract =
+            await _contractRepository.GetByIdAsync(
+                contractId);
 
         if (contract == null)
         {
             return NotFound();
         }
 
-        if (!System.IO.File.Exists(contract.DocumentPath))
+        return Ok(new
         {
-            return NotFound("Contract document not found.");
-        }
+            contractId = contract.Id,
+            userId = contract.UserId,
+            documentPath = contract.DocumentPath,
 
-        var fileBytes = await System.IO.File.ReadAllBytesAsync(
-            contract.DocumentPath);
+            status =
+                contract.Status.ToString(),
 
-        return File(
-            fileBytes,
-            "application/pdf",
-            $"contract-{contract.Id}.pdf");
+            createdAt = contract.CreatedAt,
+            signedAt = contract.SignedAt
+        });
     }
 
-    // Signs the specified contract.
-    [HttpPost("{contractId}/sign")]
-    public async Task<IActionResult> SignContract(
-        Guid contractId)
+
+    // ==================================================
+    // GET CONTRACT BY USER ID
+    // ==================================================
+
+    [HttpGet("user/{userId}")]
+    public async Task<IActionResult> GetContractByUserId(
+        Guid userId)
     {
-        var contract = await _signContractHandler.Handle(
-            new SignContractCommand
-            {
-                ContractId = contractId
-            });
+        var contract =
+            await _contractRepository.GetByUserIdAsync(
+                userId);
+
+        if (contract == null)
+        {
+            return NotFound();
+        }
 
         return Ok(new
         {
             contractId = contract.Id,
-            status = contract.Status,
+            userId = contract.UserId,
+            documentPath = contract.DocumentPath,
+
+            status =
+                contract.Status.ToString(),
+
+            createdAt = contract.CreatedAt,
+            signedAt = contract.SignedAt
+        });
+    }
+
+
+    // ==================================================
+    // GET CONTRACT PDF
+    // ==================================================
+
+    [HttpGet("{contractId}/document")]
+    public async Task<IActionResult> GetContractDocument(
+        Guid contractId)
+    {
+        var contract =
+            await _contractRepository.GetByIdAsync(
+                contractId);
+
+        if (contract == null)
+        {
+            return NotFound();
+        }
+
+        if (
+            !System.IO.File.Exists(
+                contract.DocumentPath
+            )
+        )
+        {
+            return NotFound(
+                "Contract document not found."
+            );
+        }
+
+        var fileBytes =
+            await System.IO.File.ReadAllBytesAsync(
+                contract.DocumentPath);
+
+        return File(
+            fileBytes,
+            "application/pdf",
+            $"contract-{contract.Id}.pdf"
+        );
+    }
+
+
+    // ==================================================
+    // SIGN CONTRACT
+    // ==================================================
+
+    [HttpPost("{contractId}/sign")]
+    public async Task<IActionResult> SignContract(
+        Guid contractId)
+    {
+        var contract =
+            await _signContractHandler.Handle(
+                new SignContractCommand
+                {
+                    ContractId = contractId
+                });
+
+        return Ok(new
+        {
+            contractId = contract.Id,
+            userId = contract.UserId,
+
+            status =
+                contract.Status.ToString(),
+
             signedAt = contract.SignedAt
         });
     }

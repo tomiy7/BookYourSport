@@ -92,4 +92,6 @@ public class UpdateClubDto
     public string StreetNumber { get; set; } = string.Empty;
     
     public bool IsActive { get; set; } = true;
+    
+    public List<CreateWorkingHoursDto>? WorkingHours { get; set; }
 }

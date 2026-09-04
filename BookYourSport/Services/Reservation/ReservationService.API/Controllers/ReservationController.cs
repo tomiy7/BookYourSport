@@ -27,6 +27,7 @@ public class ReservationController : ControllerBase
     [Authorize(Roles = Roles.Player)]
     [ProducesResponseType(typeof(ReservationDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status402PaymentRequired)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Create(Guid clubId, Guid courtId, CreateReservationDto createReservationDto)
     {
@@ -47,6 +48,14 @@ public class ReservationController : ControllerBase
         catch (ReservationDomainException e)
         {
             _logger.LogWarning("Reservation creation failed: {Reason}", e.Message);
+
+            if (e.ErrorCode == "INSUFFICIENT_CREDIT")
+            {
+                return StatusCode(
+                    StatusCodes.Status402PaymentRequired,
+                    new { error = "INSUFFICIENT_CREDIT", message = e.Message });
+            }
+
             return BadRequest(new { error = "DOMAIN_RULE_VIOLATION", message = e.Message });
         }
     }

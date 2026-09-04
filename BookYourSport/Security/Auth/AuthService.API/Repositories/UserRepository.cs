@@ -13,14 +13,11 @@ public class UserRepository : IUserRepository
         _dbContext = dbContext;
     }
 
-    public async Task<User?> GetUserByEmailAsync(string email) =>
-        await _dbContext.Users
-            .FirstOrDefaultAsync(x => x.Email == email);
-
-    public async Task<User?> GetUserByIdAsync(Guid userId) =>
-        await _dbContext.Users
-            .FirstOrDefaultAsync(x => x.Id == userId);
-
+    public async Task<User?> GetUserByIdAsync(Guid id)
+    {
+        return await _dbContext.Users
+            .FirstOrDefaultAsync(x => x.Id == id);
+    }
     public async Task<List<User>> GetUsersAsync(string? search)
     {
         var query = _dbContext.Users.AsQueryable();
@@ -41,13 +38,24 @@ public class UserRepository : IUserRepository
             .ToListAsync();
     }
 
-    public async Task<bool> EmailExistsAsync(string email) =>
-        await _dbContext.Users
+
+    public async Task<User?> GetUserByEmailAsync(string email)
+    {
+        return await _dbContext.Users
+            .FirstOrDefaultAsync(x => x.Email == email);
+    }
+
+    public async Task<bool> EmailExistsAsync(string email)
+    {
+        return await _dbContext.Users
             .AnyAsync(x => x.Email == email);
+    }
 
-    public async Task AddUserAsync(User user) =>
+    public async Task AddUserAsync(User user)
+    {
         await _dbContext.Users.AddAsync(user);
-
+    }
+    
     public async Task<List<User>> GetUsersByApprovalStatusAsync(string approvalStatus)
     {
         return await _dbContext.Users
@@ -55,6 +63,8 @@ public class UserRepository : IUserRepository
             .ToListAsync();
     }
 
-    public async Task SaveChangesAsync() =>
+    public async Task SaveChangesAsync()
+    {
         await _dbContext.SaveChangesAsync();
+    }
 }
