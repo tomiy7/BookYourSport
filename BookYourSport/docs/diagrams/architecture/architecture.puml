@@ -1,0 +1,75 @@
+@startuml
+title BookYourSport - High-Level Architecture
+
+top to bottom direction
+
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 55
+skinparam ranksep 50
+
+skinparam defaultFontSize 14
+skinparam ArrowFontSize 13
+skinparam ArrowThickness 1.5
+
+skinparam rectangle {
+    BorderColor #555555
+    FontColor #222222
+    RoundCorner 8
+}
+
+skinparam database {
+    BorderColor #555555
+    FontColor #222222
+}
+
+skinparam queue {
+    BorderColor #555555
+    FontColor #222222
+}
+
+actor "Client" as Client
+
+rectangle "API Gateway\nYARP" as Gateway #D9EAF7
+
+rectangle "Auth Service" as Auth #E8F5E9
+rectangle "Search Service" as Search #FFF3CD
+rectangle "Reservation Service" as Reservation #E8F5E9
+rectangle "Payment Service" as Payment #FCE4EC
+
+database "Auth\nPostgreSQL" as AuthDb #E3F2FD
+database "Redis" as Redis #FFE0B2
+database "Reservation\nPostgreSQL" as ReservationDb #E3F2FD
+database "Payment\nPostgreSQL" as PaymentDb #E3F2FD
+
+queue "RabbitMQ\nIntegration Events" as RabbitMQ #E1BEE7
+
+Client -down-> Gateway : REST / HTTP
+
+Gateway -down-> Auth : REST
+Gateway -down-> Search : REST
+Gateway -down-> Reservation : REST
+Gateway -down-> Payment : REST
+
+Search -right-> Reservation : gRPC
+
+Auth -down-> AuthDb
+Search -down-> Redis : Cache
+Reservation -down-> ReservationDb
+Payment -down-> PaymentDb
+
+Payment -down-> RabbitMQ
+RabbitMQ -left-> Reservation
+
+Auth -[hidden]right-> Search
+Search -[hidden]right-> Reservation
+Reservation -[hidden]right-> Payment
+
+AuthDb -[hidden]right-> Redis
+Redis -[hidden]right-> ReservationDb
+ReservationDb -[hidden]right-> PaymentDb
+
+PaymentDb -[hidden]down-> RabbitMQ
+
+@enduml

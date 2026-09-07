@@ -1,0 +1,120 @@
+@startuml
+title BookYourSport - Search Subsystem Class Diagram
+
+left to right direction
+
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 55
+skinparam ranksep 55
+
+skinparam defaultFontSize 13
+skinparam ArrowFontSize 11
+
+skinparam class {
+    BorderColor #555555
+    FontColor #222222
+    BackgroundColor #FFFFFF
+    ArrowColor #555555
+}
+
+skinparam package {
+    BorderColor #888888
+    FontColor #333333
+}
+
+package "API / Application" #FFF3CD {
+
+    class SearchController {
+        +SearchClubsAsync(...)
+    }
+
+    interface IClubSearchService {
+        +SearchClubsAsync(request : SearchClubsRequestDto)
+            : Task<SearchResultDto>
+    }
+
+    class ClubSearchService {
+        -reservationServiceClient : IReservationServiceClient
+        -geocodingService : IGeocodingService
+
+        +SearchClubsAsync(request : SearchClubsRequestDto)
+            : Task<SearchResultDto>
+
+        -CalculateDistanceKm(...) : double
+        -MapToSearchDto(...) : SearchClubDto
+    }
+
+    interface IReservationServiceClient {
+        +GetClubsAsync(...)
+    }
+
+    interface IGeocodingService {
+        +GeocodeAsync(address : string)
+    }
+
+    class SearchClubsRequestDto {
+        +Name : string?
+        +City : string?
+        +MinPrice : decimal?
+        +MaxPrice : decimal?
+        +SurfaceType : SurfaceType?
+        +IsIndoor : bool?
+        +MaxDistanceKm : double?
+        +SortBy : string?
+        +Page : int
+        +PageSize : int
+    }
+
+    class SearchResultDto {
+        +Clubs
+        +Page : int
+        +PageSize : int
+        +TotalCount : int
+        +TotalPages : int
+    }
+}
+
+package "Domain" #E8F5E9 {
+
+    enum SurfaceType
+}
+
+package "Infrastructure" #E3F2FD {
+
+    class ReservationServiceClient {
+        +GetClubsAsync(...)
+    }
+
+    class GeocodingService {
+        -httpClient : HttpClient
+        -cache : RedisGeocodingCache
+
+        +GeocodeAsync(...)
+    }
+
+    class RedisGeocodingCache {
+        +GetAsync(address : string)
+        +SetAsync(...)
+    }
+}
+
+SearchController --> IClubSearchService
+
+ClubSearchService ..|> IClubSearchService
+
+ClubSearchService --> IReservationServiceClient
+ClubSearchService --> IGeocodingService
+
+ClubSearchService --> SearchClubsRequestDto
+ClubSearchService --> SearchResultDto
+
+SearchClubsRequestDto --> SurfaceType
+
+ReservationServiceClient ..|> IReservationServiceClient
+GeocodingService ..|> IGeocodingService
+
+GeocodingService --> RedisGeocodingCache
+
+@enduml

@@ -1,0 +1,124 @@
+@startuml
+title BookYourSport - Payment Subsystem Class Diagram
+
+top to bottom direction
+
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 55
+skinparam ranksep 55
+
+skinparam defaultFontSize 13
+skinparam ArrowFontSize 11
+
+skinparam class {
+    BorderColor #555555
+    FontColor #222222
+    BackgroundColor #FFFFFF
+    ArrowColor #555555
+}
+
+skinparam package {
+    BorderColor #888888
+    FontColor #333333
+}
+
+package "Domain" #E8F5E9 {
+
+    class CreditAccount {
+        +Id : Guid
+        +UserId : Guid
+        +Balance : int
+        +Transactions : IReadOnlyCollection<Transaction>
+
+        +TopUp(amount : int, referenceId : Guid?)
+        +Charge(amount : int, referenceId : Guid)
+        +Refund(amount : int, referenceId : Guid)
+    }
+
+    class Transaction {
+        +Id : Guid
+        +Amount : int
+        +Type : TransactionType
+        +CreatedAt : DateTime
+        +ReferenceId : Guid?
+    }
+
+    enum TransactionType {
+        TopUp
+        Charge
+        Refund
+    }
+
+    class Contract {
+        +Id : Guid
+        +UserId : Guid
+        +DocumentPath : string
+        +Status : ContractStatus
+        +CreatedAt : DateTime
+
+        +Sign()
+    }
+
+    enum ContractStatus
+}
+
+package "Application" #FFF3CD {
+
+    class TopUpCreditHandler {
+        +Handle(command : TopUpCreditCommand)
+    }
+
+    class GenerateContractHandler {
+        +Handle(command : GenerateContractCommand)
+    }
+
+    class SignContractHandler {
+        +Handle(command : SignContractCommand)
+    }
+
+    interface ICreditAccountRepository {
+        +GetByUserIdAsync(userId : Guid)
+        +SaveAsync(account : CreditAccount)
+    }
+
+    interface IContractRepository {
+        +GetByIdAsync(id : Guid)
+        +SaveAsync(contract : Contract)
+    }
+
+    interface IPdfContractGenerator {
+        +GenerateContractAsync(
+            userId : Guid,
+            firstName : string,
+            lastName : string,
+            amount : decimal,
+            currency : string)
+    }
+
+    interface IAuthServiceClient {
+        +GetUserAsync(userId : Guid)
+        +NotifyContractGeneratedAsync(...)
+        +NotifyContractSignedAsync(...)
+    }
+}
+
+CreditAccount "1" *-- "0..*" Transaction
+Transaction --> TransactionType
+
+Contract --> ContractStatus
+
+TopUpCreditHandler --> ICreditAccountRepository
+ICreditAccountRepository --> CreditAccount
+
+GenerateContractHandler --> IContractRepository
+GenerateContractHandler --> IPdfContractGenerator
+GenerateContractHandler --> IAuthServiceClient
+
+SignContractHandler --> IContractRepository
+SignContractHandler --> IAuthServiceClient
+
+IContractRepository --> Contract
+
+@enduml

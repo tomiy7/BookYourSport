@@ -1,0 +1,144 @@
+@startuml
+title BookYourSport - Reservation Subsystem Class Diagram
+
+left to right direction
+
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 45
+
+skinparam defaultFontSize 13
+skinparam ArrowFontSize 12
+
+skinparam class {
+    BorderColor #555555
+    FontColor #222222
+    BackgroundColor #FFFFFF
+    ArrowColor #555555
+}
+
+skinparam package {
+    BorderColor #888888
+    FontColor #333333
+}
+
+package "Domain" #E8F5E9 {
+
+    class TennisClub {
+        +Name : string
+        +OwnerId : Guid
+        +Address : Address
+        +IsActive : bool
+        +Courts : IReadOnlyCollection<Court>
+        +WorkingHours : IReadOnlyCollection<WorkingHours>
+
+        +AddCourt(...)
+        +RemoveCourt(...)
+        +IsOpenDuring(...) : bool
+    }
+
+    class Court {
+        +ClubId : Guid
+        +Name : string
+        +SurfaceType : SurfaceType
+        +IsIndoor : bool
+        +PricePerHour : Price
+        +IsActive : bool
+    }
+
+    class WorkingHours {
+        +DayOfWeek : DayOfWeek
+        +OpenTime : TimeOnly
+        +CloseTime : TimeOnly
+        +IsClosed : bool
+    }
+
+    class Reservation {
+        +CourtId : Guid
+        +ClubId : Guid
+        +UserId : Guid
+        +StartTime : DateTime
+        +EndTime : DateTime
+        +Price : Price
+        +Status : ReservationStatus
+
+        +Confirm()
+        +Cancel()
+        +Reschedule(...)
+    }
+
+    class Address <<Value Object>> {
+        +City : string
+        +Street : string
+        +StreetNumber : string
+        +Country : string
+    }
+
+    class Price <<Value Object>> {
+        +Amount : decimal
+        +Currency : string
+
+        +Multiply(factor : decimal) : Price
+    }
+
+    enum SurfaceType
+
+    enum ReservationStatus
+
+    interface IReservationRepository {
+        +HasOverlapAsync(...) : bool
+        +GetByUserAsync(...)
+        +GetByClubAsync(...)
+    }
+
+    interface IClubRepository
+}
+
+package "Application" #FFF3CD {
+
+    interface IReservationService {
+        +CreateReservationAsync(...)
+        +RescheduleReservationAsync(...)
+        +CancelReservationAsync(...)
+        +GetByUserIdAsync(...)
+        +GetByClubIdAsync(...)
+    }
+
+    interface IPaymentServiceClient {
+        +ChargeAsync(...)
+        +RefundAsync(...)
+    }
+
+    class ReservationBookingService {
+        +CreateReservationAsync(...)
+        +RescheduleReservationAsync(...)
+        +CancelReservationAsync(...)
+        +GetByUserIdAsync(...)
+        +GetByClubIdAsync(...)
+    }
+}
+
+TennisClub "1" *-- "0..*" Court
+TennisClub "1" *-- "0..*" WorkingHours
+TennisClub *-- Address
+
+Court *-- Price
+Court --> SurfaceType
+
+Reservation *-- Price
+Reservation --> ReservationStatus
+Reservation --> Court
+Reservation --> TennisClub
+
+ReservationBookingService ..|> IReservationService
+
+ReservationBookingService --> IReservationRepository
+ReservationBookingService --> IClubRepository
+ReservationBookingService --> IPaymentServiceClient
+
+IReservationRepository --> Reservation
+IClubRepository --> TennisClub
+
+@enduml

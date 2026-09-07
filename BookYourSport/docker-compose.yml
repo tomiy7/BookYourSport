@@ -1,0 +1,11 @@
+include:
+
+  - ./Payment/docker-compose.yml
+
+  - ./Search/docker-compose.yml
+
+  - ./Security/Auth/docker-compose.yml
+
+  - ./Services/Reservation/docker-compose.yml
+
+  - ./ApiGateway/docker-compose.yml
