@@ -2,52 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 
-import PlayerHeader from "./../PlayerHeader";
-import Footer from "./../../Footer";
+import PlayerHeader from "../PlayerHeader";
+import Footer from "../../Footer";
 import { getAccessToken } from "@/lib/auth";
-import { apiFetch } from "@/lib/api";
-
-type Price = {
-    amount: number;
-    currency: string;
-};
-
-type Reservation = {
-    id: string;
-    courtId: string;
-    clubId: string;
-    userId: string;
-    startTime: string;
-    endTime: string;
-    price: Price;
-    status: string;
-};
-
-type Address = {
-    city?: string;
-    municipality?: string;
-    zipCode?: string;
-    street?: string;
-    streetNumber?: string;
-    country?: string;
-};
-
-type Club = {
-    id: string;
-    name: string;
-    description?: string;
-    address?: Address | string;
-};
-
-type Court = {
-    id: string;
-    name?: string;
-    courtName?: string;
-    type?: string;
-    surface?: string;
-};
+import {
+    getMyReservations,
+    getClub,
+    Reservation,
+    Club,
+} from "@/lib/reservationApi";
 
 function getUserIdFromToken(token: string): string | null {
     try {
@@ -98,9 +62,7 @@ function getUserIdFromToken(token: string): string | null {
 }
 
 function formatDate(dateString: string) {
-    return new Date(
-        dateString
-    ).toLocaleDateString("sr-RS", {
+    return new Date(dateString).toLocaleDateString("sr-RS", {
         day: "2-digit",
         month: "long",
         year: "numeric",
@@ -108,66 +70,40 @@ function formatDate(dateString: string) {
 }
 
 function formatTime(dateString: string) {
-    return new Date(
-        dateString
-    ).toLocaleTimeString("sr-RS", {
+    return new Date(dateString).toLocaleTimeString("sr-RS", {
         hour: "2-digit",
         minute: "2-digit",
     });
 }
 
-function formatAddress(address?: Address | string) {
-    if (!address) {
-        return "";
-    }
-
-    if (typeof address === "string") {
-        return address;
-    }
-
-    const streetPart = [
-        address.street,
-        address.streetNumber,
-    ]
-        .filter(Boolean)
-        .join(" ");
-
-    const cityPart = [
-        address.zipCode,
-        address.city || address.municipality,
-    ]
-        .filter(Boolean)
-        .join(" ");
-
-    return [
-        streetPart,
-        cityPart,
-        address.country,
-    ]
-        .filter(Boolean)
-        .join(", ");
+function formatPrice(amount: number, currency = "RSD") {
+    return new Intl.NumberFormat("sr-Latn-RS", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 2,
+    }).format(amount);
 }
 
-export default function ReservationDetailsPage() {
-    const params = useParams();
+/*
+ * Rezervacija sama po sebi ne nosi ime kluba/terena,
+ * pa ih dodajemo naknadno (enrichujemo) na frontu
+ * na osnovu clubId / courtId.
+ */
+type EnrichedReservation = Reservation & {
+    clubName?: string;
+    courtName?: string;
+};
 
-    const reservationId = params.id as string;
-
-    const [reservation, setReservation] =
-        useState<Reservation | null>(null);
-
-    const [club, setClub] =
-        useState<Club | null>(null);
-
-    const [court, setCourt] =
-        useState<Court | null>(null);
+export default function MyReservationsPage() {
+    const [reservations, setReservations] = useState<
+        EnrichedReservation[]
+    >([]);
 
     const [loading, setLoading] = useState(true);
-
     const [error, setError] = useState("");
 
     useEffect(() => {
-        async function loadReservation() {
+        async function loadReservations() {
             try {
                 setLoading(true);
                 setError("");
@@ -175,13 +111,10 @@ export default function ReservationDetailsPage() {
                 const token = getAccessToken();
 
                 if (!token) {
-                    throw new Error(
-                        "Korisnik nije prijavljen."
-                    );
+                    throw new Error("Korisnik nije prijavljen.");
                 }
 
-                const userId =
-                    getUserIdFromToken(token);
+                const userId = getUserIdFromToken(token);
 
                 if (!userId) {
                     throw new Error(
@@ -190,329 +123,208 @@ export default function ReservationDetailsPage() {
                 }
 
                 /*
-                 * 1. Dohvatamo sve rezervacije korisnika
+                 * 1. Sve rezervacije ulogovanog igrača
                  */
-                const reservationsResponse =
-                    await apiFetch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/reservations/user/${userId}`,
-                        {
-                            method: "GET",
-                        }
-                    );
-
-                if (!reservationsResponse.ok) {
-                    throw new Error(
-                        `Ne mogu učitati rezervacije. Status: ${reservationsResponse.status}`
-                    );
-                }
-
-                const reservations: Reservation[] =
-                    await reservationsResponse.json();
-
-                /*
-                 * 2. Pronalazimo rezervaciju
-                 * prema ID-u iz URL-a
-                 */
-                const foundReservation =
-                    reservations.find(
-                        (item) =>
-                            item.id === reservationId
-                    );
-
-                if (!foundReservation) {
-                    throw new Error(
-                        "Rezervacija nije pronađena."
-                    );
-                }
-
-                setReservation(
-                    foundReservation
-                );
-
-                console.log(
-                    "Pronađena rezervacija:",
-                    foundReservation
+                const myReservations = await getMyReservations(
+                    userId
                 );
 
                 /*
-                 * 3. Dohvatamo klub i teren paralelno
+                 * 2. Za svaki jedinstven klub iz rezervacija
+                 * dovlačimo podatke o klubu (ima i listu terena),
+                 * kako bismo prikazali ime kluba i terena.
                  */
-                const [
-                    clubResponse,
-                    courtResponse,
-                ] = await Promise.all([
-                    apiFetch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${foundReservation.clubId}`,
-                        {
-                            method: "GET",
-                        }
-                    ),
+                const uniqueClubIds = Array.from(
+                    new Set(
+                        myReservations.map(
+                            (reservation) => reservation.clubId
+                        )
+                    )
+                );
 
-                    apiFetch(
-                        `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${foundReservation.clubId}/courts/${foundReservation.courtId}`,
-                        {
-                            method: "GET",
+                const clubsById = new Map<string, Club>();
+
+                await Promise.all(
+                    uniqueClubIds.map(async (clubId) => {
+                        try {
+                            const club = await getClub(clubId);
+                            clubsById.set(clubId, club);
+                        } catch (clubError) {
+                            console.error(
+                                "Ne mogu da učitam klub:",
+                                clubId,
+                                clubError
+                            );
                         }
-                    ),
-                ]);
+                    })
+                );
+
+                const enriched: EnrichedReservation[] =
+                    myReservations.map((reservation) => {
+                        const club = clubsById.get(
+                            reservation.clubId
+                        );
+
+                        const court = club?.courts?.find(
+                            (item) =>
+                                item.id === reservation.courtId
+                        );
+
+                        return {
+                            ...reservation,
+                            clubName: club?.name,
+                            courtName: court?.name,
+                        };
+                    });
 
                 /*
-                 * Klub
+                 * Predstojeći termini prvo (najraniji prvo),
+                 * pa tek onda otkazani/prošli.
                  */
-                if (clubResponse.ok) {
-                    const clubData =
-                        await clubResponse.json();
+                enriched.sort((a, b) => {
+                    const aCanceled =
+                        a.status.toLowerCase() === "canceled";
+                    const bCanceled =
+                        b.status.toLowerCase() === "canceled";
 
-                    console.log(
-                        "Club:",
-                        clubData
+                    if (aCanceled !== bCanceled) {
+                        return aCanceled ? 1 : -1;
+                    }
+
+                    return (
+                        new Date(a.startTime).getTime() -
+                        new Date(b.startTime).getTime()
                     );
+                });
 
-                    setClub(clubData);
-                } else {
-                    console.error(
-                        "Ne mogu da učitam klub:",
-                        clubResponse.status
-                    );
-                }
-
-                /*
-                 * Teren
-                 */
-                if (courtResponse.ok) {
-                    const courtData =
-                        await courtResponse.json();
-
-                    console.log(
-                        "Court:",
-                        courtData
-                    );
-
-                    setCourt(courtData);
-                } else {
-                    console.error(
-                        "Ne mogu da učitam teren:",
-                        courtResponse.status
-                    );
-                }
-            } catch (error) {
+                setReservations(enriched);
+            } catch (loadError) {
                 console.error(
-                    "Greška prilikom učitavanja rezervacije:",
-                    error
+                    "Greška prilikom učitavanja rezervacija:",
+                    loadError
                 );
 
                 setError(
-                    error instanceof Error
-                        ? error.message
-                        : "Došlo je do greške prilikom učitavanja rezervacije."
+                    loadError instanceof Error
+                        ? loadError.message
+                        : "Došlo je do greške prilikom učitavanja rezervacija."
                 );
             } finally {
                 setLoading(false);
             }
         }
 
-        if (reservationId) {
-            loadReservation();
-        }
-    }, [reservationId]);
-
-    if (loading) {
-        return (
-            <main className="flex min-h-screen flex-col bg-zinc-50">
-                <PlayerHeader />
-
-                <section className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
-                    <p className="text-zinc-600">
-                        Učitavanje rezervacije...
-                    </p>
-                </section>
-
-                <Footer />
-            </main>
-        );
-    }
-
-    if (error || !reservation) {
-        return (
-            <main className="flex min-h-screen flex-col bg-zinc-50">
-                <PlayerHeader />
-
-                <section className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
-                    <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">
-                        {error ||
-                            "Rezervacija nije pronađena."}
-                    </div>
-
-                    <Link
-                        href="/player-dashboard/reservation"
-                        className="mt-6 inline-block font-semibold text-green-700 hover:underline"
-                    >
-                        ← Nazad na moje rezervacije
-                    </Link>
-                </section>
-
-                <Footer />
-            </main>
-        );
-    }
-
-    const isCanceled =
-        reservation.status.toLowerCase() ===
-        "canceled";
-
-    const clubAddress =
-        formatAddress(club?.address);
-
-    /*
-     * Backend možda koristi name ili courtName,
-     * pa pokrivamo obe mogućnosti.
-     */
-    const courtDisplayName =
-        court?.name ||
-        court?.courtName ||
-        "Teren";
+        loadReservations();
+    }, []);
 
     return (
         <main className="flex min-h-screen flex-col bg-zinc-50">
             <PlayerHeader />
 
             <section className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
-                <Link
-                    href="/player-dashboard/reservation"
-                    className="text-sm font-semibold text-green-700 hover:underline"
-                >
-                    ← Nazad na moje rezervacije
-                </Link>
+                <p className="text-sm font-semibold uppercase tracking-widest text-green-700">
+                    Rezervacije
+                </p>
 
-                <div className="mt-8 rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
-                    <p className="text-sm font-semibold uppercase tracking-widest text-green-700">
-                        Rezervacija
+                <h1 className="mt-3 text-3xl font-bold text-zinc-900">
+                    Moje rezervacije
+                </h1>
+
+                <p className="mt-2 text-zinc-600">
+                    Pregled svih tvojih rezervisanih termina.
+                </p>
+
+                {loading && (
+                    <p className="mt-10 text-zinc-600">
+                        Učitavanje rezervacija...
                     </p>
+                )}
 
-                    <h1 className="mt-3 text-3xl font-bold text-zinc-900">
-                        Detalji rezervacije
-                    </h1>
-
-                    {/* KLUB I TEREN */}
-
-                    <div className="mt-8 rounded-xl bg-zinc-50 p-6">
-                        <h2 className="text-lg font-bold text-zinc-900">
-                            Lokacija rezervacije
-                        </h2>
-
-                        <div className="mt-5 grid gap-6 sm:grid-cols-2">
-                            <div>
-                                <p className="text-sm text-zinc-500">
-                                    Teniski klub
-                                </p>
-
-                                <p className="mt-1 font-semibold text-zinc-900">
-                                    {club?.name ||
-                                        "Učitavanje kluba..."}
-                                </p>
-
-                                {clubAddress && (
-                                    <p className="mt-1 text-sm text-zinc-500">
-                                        📍 {clubAddress}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <p className="text-sm text-zinc-500">
-                                    Teren
-                                </p>
-
-                                <p className="mt-1 font-semibold text-zinc-900">
-                                    {courtDisplayName}
-                                </p>
-
-                                {court?.surface && (
-                                    <p className="mt-1 text-sm text-zinc-500">
-                                        Podloga:{" "}
-                                        {court.surface}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
+                {!loading && error && (
+                    <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">
+                        {error}
                     </div>
+                )}
 
-                    {/* DATUM, VREME, CENA, STATUS */}
-
-                    <div className="mt-8 grid gap-6 sm:grid-cols-2">
-                        <div>
-                            <p className="text-sm text-zinc-500">
-                                Datum
+                {!loading &&
+                    !error &&
+                    reservations.length === 0 && (
+                        <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center">
+                            <p className="text-zinc-600">
+                                Još uvek nemaš nijednu rezervaciju.
                             </p>
 
-                            <p className="mt-1 font-semibold text-zinc-900">
-                                {formatDate(
-                                    reservation.startTime
-                                )}
-                            </p>
-                        </div>
-
-                        <div>
-                            <p className="text-sm text-zinc-500">
-                                Vreme
-                            </p>
-
-                            <p className="mt-1 font-semibold text-zinc-900">
-                                {formatTime(
-                                    reservation.startTime
-                                )}{" "}
-                                -{" "}
-                                {formatTime(
-                                    reservation.endTime
-                                )}
-                            </p>
-                        </div>
-
-                        <div>
-                            <p className="text-sm text-zinc-500">
-                                Cena
-                            </p>
-
-                            <p className="mt-1 font-semibold text-zinc-900">
-                                {
-                                    reservation.price
-                                        .amount
-                                }{" "}
-                                {
-                                    reservation.price
-                                        .currency
-                                }
-                            </p>
-                        </div>
-
-                        <div>
-                            <p className="text-sm text-zinc-500">
-                                Status
-                            </p>
-
-                            <p
-                                className={`mt-1 font-semibold ${
-                                    isCanceled
-                                        ? "text-red-600"
-                                        : "text-green-700"
-                                }`}
-                            >
-                                {reservation.status}
-                            </p>
-                        </div>
-                    </div>
-
-                    {!isCanceled && (
-                        <div className="mt-10">
                             <Link
-                                href={`/player-dashboard/reservation/${reservation.id}/edit`}
-                                className="inline-block rounded-lg border border-green-700 px-5 py-3 text-sm font-semibold text-green-700 transition hover:bg-green-50"
+                                href="/clubs"
+                                className="mt-4 inline-block font-semibold text-green-700 hover:underline"
                             >
-                                Izmeni rezervaciju
+                                Pronađi teren i rezerviši →
                             </Link>
                         </div>
                     )}
-                </div>
+
+                {!loading && !error && reservations.length > 0 && (
+                    <div className="mt-8 space-y-4">
+                        {reservations.map((reservation) => {
+                            const isCanceled =
+                                reservation.status.toLowerCase() ===
+                                "canceled";
+
+                            return (
+                                <Link
+                                    key={reservation.id}
+                                    href={`/player-dashboard/reservation/${reservation.id}`}
+                                    className="block rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-green-300 hover:shadow-md"
+                                >
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <p className="font-bold text-zinc-900">
+                                                {reservation.clubName ||
+                                                    "Klub"}
+                                                {reservation.courtName
+                                                    ? ` · ${reservation.courtName}`
+                                                    : ""}
+                                            </p>
+
+                                            <p className="mt-1 text-sm text-zinc-600">
+                                                {formatDate(
+                                                    reservation.startTime
+                                                )}
+                                                {" · "}
+                                                {formatTime(
+                                                    reservation.startTime
+                                                )}
+                                                {" - "}
+                                                {formatTime(
+                                                    reservation.endTime
+                                                )}
+                                            </p>
+
+                                            <p className="mt-1 text-sm font-semibold text-zinc-800">
+                                                {formatPrice(
+                                                    reservation.price
+                                                        .amount,
+                                                    reservation.price
+                                                        .currency
+                                                )}
+                                            </p>
+                                        </div>
+
+                                        <span
+                                            className={`inline-block w-fit rounded-full px-4 py-1.5 text-xs font-semibold ${
+                                                isCanceled
+                                                    ? "bg-red-100 text-red-700"
+                                                    : "bg-green-100 text-green-700"
+                                            }`}
+                                        >
+                                            {reservation.status}
+                                        </span>
+                                    </div>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                )}
             </section>
 
             <Footer />

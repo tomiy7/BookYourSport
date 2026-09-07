@@ -148,6 +148,7 @@ public class ReservationBookingService : IReservationService
         }
 
         reservation.Confirm();
+        await _reservationRepository.SaveChangesAsync();
 
         _logger.LogInformation(
             "Reservation {ReservationId} created for court {CourtId} by user {UserId}",
