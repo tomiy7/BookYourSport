@@ -53,9 +53,9 @@ BookYourSport follows a **microservice architecture** consisting of four main ba
 
 All external backend requests are routed through a **YARP API Gateway**.
 
-![BookYourSport High-Level Architecture](docs/diagrams/architecture/architecture.png)
+![BookYourSport High-Level Architecture](BookYourSport/docs/diagrams/architecture/architecture.png)
 
-A detailed description of the architecture is available in the [Architecture Documentation](docs/Architecture.md).
+A detailed description of the architecture is available in the [Architecture Documentation](BookYourSport/docs/Architecture.md).
 
 ---
 
@@ -155,7 +155,7 @@ Application handlers coordinate individual use cases, while infrastructure compo
 
 The **Auth** and **Search** services are independent microservices with narrower domain responsibilities and simpler internal models.
 
-More information about individual subsystems is available in the [Class Diagrams](docs/ClassDiagrams.md).
+More information about individual subsystems is available in the [Class Diagrams](BookYourSport/docs/ClassDiagrams.md).
 
 ---
 
@@ -563,23 +563,23 @@ Individual test projects or selected groups of tests can also be executed indepe
 
 # 📚 Documentation
 
-Additional project documentation is available in the [`docs`](docs/) directory.
+Additional project documentation is available in the [`docs`](BookYourSport/docs/) directory.
 
 ### 📖 User Manual
 
-[UserManual.md](docs/UserManual.md)
+[UserManual.md](BookYourSport/docs/UserManual.md)
 
 Describes application functionality and the main workflows available to users.
 
 ### 🏗️ Architecture Documentation
 
-[Architecture.md](docs/Architecture.md)
+[Architecture.md](BookYourSport/docs/Architecture.md)
 
 Describes the high-level system architecture, microservices, data ownership, and communication mechanisms.
 
 ### 🧩 Class Diagrams
 
-[ClassDiagrams.md](docs/ClassDiagrams.md)
+[ClassDiagrams.md](BookYourSport/docs/ClassDiagrams.md)
 
 Contains class diagrams and descriptions for:
 
