@@ -33,10 +33,9 @@ The main components are:
 - **RefreshToken** – represents refresh tokens associated with users.
 - **UserRepository** – provides the concrete user persistence implementation.
 - **RefreshTokenRepository** – provides the concrete refresh-token persistence implementation.
-- **JwtTokenService** – implements JWT access and refresh token generation.
+- **TokenService** – implements JWT access and refresh token generation.
 - **AppDbContext** – Entity Framework Core database context used by the service.
 
-The API/Application layer depends on abstractions, while the Infrastructure layer provides their concrete implementations.
 
 ---
 
