@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import PlayerHeader from "../../../PlayerHeader";
 import Footer from "../../../../Footer";
 import { apiFetch } from "@/lib/api";
+import { cancelReservation } from "@/lib/reservationApi";
 
 type Price = {
     amount: number;
@@ -52,6 +53,15 @@ function formatTime(dateString: string) {
     }).format(new Date(dateString));
 }
 
+// DODATO: potrebno samo za prikaz cene u cancel sekciji
+function formatPrice(amount: number, currency = "RSD") {
+    return new Intl.NumberFormat("sr-Latn-RS", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 2,
+    }).format(amount);
+}
+
 function sortSlots(slots: Availability[]) {
     return [...slots].sort(
         (a, b) =>
@@ -91,6 +101,29 @@ function areSlotsConsecutive(
     }
 
     return true;
+}
+
+// DODATO: procena povraćaja (isti principi kao RefundPolicy
+// na Payment servisu — backend uvek ima konačnu reč, ovo je
+// samo informativni prikaz na frontu).
+function estimateRefund(
+    originalAmount: number,
+    reservationStart: string
+) {
+    const hoursUntilStart =
+        (new Date(reservationStart).getTime() -
+            Date.now()) /
+        (1000 * 60 * 60);
+
+    if (hoursUntilStart >= 24) {
+        return originalAmount;
+    }
+
+    if (hoursUntilStart >= 12) {
+        return originalAmount / 2;
+    }
+
+    return 0;
 }
 
 export default function EditReservationPage() {
@@ -135,6 +168,18 @@ export default function EditReservationPage() {
         useState(false);
 
     const [error, setError] =
+        useState("");
+
+    // DODATO: state za otkazivanje rezervacije
+    const [
+        showCancelConfirm,
+        setShowCancelConfirm,
+    ] = useState(false);
+
+    const [cancelling, setCancelling] =
+        useState(false);
+
+    const [cancelError, setCancelError] =
         useState("");
 
     // ==========================================
@@ -449,6 +494,40 @@ export default function EditReservationPage() {
         }
     }
 
+    // DODATO: otkazivanje rezervacije (poziva postojeći
+    // PUT /reservations/{id}/cancel endpoint, koji na
+    // backend-u pokreće povraćaj novca prema RefundPolicy).
+    async function handleCancel() {
+        if (!reservation) {
+            return;
+        }
+
+        try {
+            setCancelling(true);
+            setCancelError("");
+
+            await cancelReservation(
+                reservation.id
+            );
+
+            router.push(
+                "/player-dashboard/reservation"
+            );
+
+            router.refresh();
+        } catch (cancelErr) {
+            console.error(cancelErr);
+
+            setCancelError(
+                cancelErr instanceof Error
+                    ? cancelErr.message
+                    : "Otkazivanje rezervacije nije uspelo."
+            );
+
+            setCancelling(false);
+        }
+    }
+
     // ==========================================
     // INFO O NOVOM TERMINU
     // ==========================================
@@ -523,6 +602,12 @@ export default function EditReservationPage() {
     if (!reservation) {
         return null;
     }
+
+    // DODATO: procena povraćaja za prikaz u cancel sekciji
+    const refundEstimate = estimateRefund(
+        reservation.price.amount,
+        reservation.startTime
+    );
 
     // ==========================================
     // PAGE
@@ -774,6 +859,97 @@ export default function EditReservationPage() {
                                 : "Potvrdi novi termin"}
                         </button>
                     </div>
+                </div>
+
+                {/* DODATO: OTKAZIVANJE REZERVACIJE */}
+
+                <div className="mt-8 rounded-2xl border border-red-200 bg-white p-8 shadow-sm">
+                    <h2 className="text-lg font-bold text-zinc-900">
+                        Otkaži rezervaciju
+                    </h2>
+
+                    <p className="mt-2 text-sm text-zinc-600">
+                        Politika povraćaja: pun iznos ako otkažeš
+                        najmanje 24h pre termina, 50% ako otkažeš
+                        između 12h i 24h pre termina, bez povraćaja
+                        ako otkažeš manje od 12h pre termina.
+                    </p>
+
+                    <p className="mt-3 text-sm text-zinc-700">
+                        Na osnovu trenutnog vremena, procenjeni
+                        povraćaj bi bio{" "}
+                        <span className="font-semibold">
+                            {formatPrice(
+                                refundEstimate,
+                                reservation.price.currency
+                            )}
+                        </span>{" "}
+                        od ukupno{" "}
+                        {formatPrice(
+                            reservation.price.amount,
+                            reservation.price.currency
+                        )}
+                        .
+                    </p>
+
+                    {cancelError && (
+                        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-red-600">
+                            {cancelError}
+                        </div>
+                    )}
+
+                    {!showCancelConfirm ? (
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setShowCancelConfirm(
+                                    true
+                                )
+                            }
+                            className="mt-5 rounded-lg border border-red-300 px-5 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                        >
+                            Otkaži rezervaciju
+                        </button>
+                    ) : (
+                        <div className="mt-5 rounded-xl bg-red-50 p-5">
+                            <p className="text-sm font-semibold text-red-800">
+                                Da li si siguran/na da želiš da
+                                otkažeš ovu rezervaciju?
+                            </p>
+
+                            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setShowCancelConfirm(
+                                            false
+                                        )
+                                    }
+                                    disabled={
+                                        cancelling
+                                    }
+                                    className="rounded-lg border border-zinc-300 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 disabled:opacity-50"
+                                >
+                                    Odustani
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        handleCancel
+                                    }
+                                    disabled={
+                                        cancelling
+                                    }
+                                    className="rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    {cancelling
+                                        ? "Otkazivanje u toku..."
+                                        : "Da, otkaži rezervaciju"}
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
 

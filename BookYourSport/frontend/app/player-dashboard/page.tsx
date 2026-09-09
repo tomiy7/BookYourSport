@@ -1468,7 +1468,7 @@ export default function PlayerDashboard() {
                                 type="button"
                                 onClick={() =>
                                     router.push(
-                                        "/player-dashboard/reservation"
+                                        "/player-dashboard/reservation?view=history"
                                     )
                                 }
                                 className="shrink-0 rounded-lg bg-green-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-green-800"

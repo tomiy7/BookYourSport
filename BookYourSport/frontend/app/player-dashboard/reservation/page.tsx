@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import PlayerHeader from "../PlayerHeader";
 import Footer from "../../Footer";
@@ -94,7 +95,35 @@ type EnrichedReservation = Reservation & {
     courtName?: string;
 };
 
-export default function MyReservationsPage() {
+type ReservationTab = "active" | "history";
+
+/*
+ * "Aktivna" rezervacija = nije otkazana i termin
+ * joj se još nije završio. Sve ostalo (otkazane
+ * i prošle rezervacije) ide u istoriju.
+ */
+function isUpcoming(reservation: EnrichedReservation) {
+    const notCancelled =
+        reservation.status.toLowerCase() !== "cancelled";
+
+    const notFinishedYet =
+        new Date(reservation.endTime).getTime() >=
+        Date.now();
+
+    return notCancelled && notFinishedYet;
+}
+
+function MyReservationsPageContent() {
+    const searchParams = useSearchParams();
+
+    const initialTab: ReservationTab =
+        searchParams.get("view") === "history"
+            ? "history"
+            : "active";
+
+    const [activeTab, setActiveTab] =
+        useState<ReservationTab>(initialTab);
+
     const [reservations, setReservations] = useState<
         EnrichedReservation[]
     >([]);
@@ -183,9 +212,9 @@ export default function MyReservationsPage() {
                  */
                 enriched.sort((a, b) => {
                     const aCanceled =
-                        a.status.toLowerCase() === "canceled";
+                        a.status.toLowerCase() === "cancelled";
                     const bCanceled =
-                        b.status.toLowerCase() === "canceled";
+                        b.status.toLowerCase() === "cancelled";
 
                     if (aCanceled !== bCanceled) {
                         return aCanceled ? 1 : -1;
@@ -234,6 +263,38 @@ export default function MyReservationsPage() {
                     Pregled svih tvojih rezervisanih termina.
                 </p>
 
+                {/* TABOVI: AKTIVNE / ISTORIJA */}
+
+                <div className="mt-6 inline-flex rounded-lg border border-zinc-200 bg-white p-1">
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setActiveTab("active")
+                        }
+                        className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
+                            activeTab === "active"
+                                ? "bg-green-700 text-white"
+                                : "text-zinc-600 hover:text-zinc-900"
+                        }`}
+                    >
+                        Aktivne
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setActiveTab("history")
+                        }
+                        className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
+                            activeTab === "history"
+                                ? "bg-green-700 text-white"
+                                : "text-zinc-600 hover:text-zinc-900"
+                        }`}
+                    >
+                        Istorija
+                    </button>
+                </div>
+
                 {loading && (
                     <p className="mt-10 text-zinc-600">
                         Učitavanje rezervacija...
@@ -263,71 +324,122 @@ export default function MyReservationsPage() {
                         </div>
                     )}
 
-                {!loading && !error && reservations.length > 0 && (
-                    <div className="mt-8 space-y-4">
-                        {reservations.map((reservation) => {
-                            const isCanceled =
-                                reservation.status.toLowerCase() ===
-                                "canceled";
+                {!loading &&
+                    !error &&
+                    reservations.length > 0 &&
+                    (() => {
+                        const visibleReservations =
+                            reservations.filter(
+                                (reservation) =>
+                                    activeTab === "history"
+                                        ? !isUpcoming(
+                                            reservation
+                                        )
+                                        : isUpcoming(
+                                            reservation
+                                        )
+                            );
 
+                        if (visibleReservations.length === 0) {
                             return (
-                                <Link
-                                    key={reservation.id}
-                                    href={`/player-dashboard/reservation/${reservation.id}`}
-                                    className="block rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-green-300 hover:shadow-md"
-                                >
-                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                        <div>
-                                            <p className="font-bold text-zinc-900">
-                                                {reservation.clubName ||
-                                                    "Klub"}
-                                                {reservation.courtName
-                                                    ? ` · ${reservation.courtName}`
-                                                    : ""}
-                                            </p>
+                                <div className="mt-10 rounded-2xl border border-dashed border-zinc-300 bg-white p-10 text-center">
+                                    <p className="text-zinc-600">
+                                        {activeTab === "history"
+                                            ? "Nemaš još nijednu rezervaciju u istoriji."
+                                            : "Nemaš nijednu aktivnu rezervaciju."}
+                                    </p>
+                                </div>
+                            );
+                        }
 
-                                            <p className="mt-1 text-sm text-zinc-600">
-                                                {formatDate(
-                                                    reservation.startTime
-                                                )}
-                                                {" · "}
-                                                {formatTime(
-                                                    reservation.startTime
-                                                )}
-                                                {" - "}
-                                                {formatTime(
-                                                    reservation.endTime
-                                                )}
-                                            </p>
+                        return (
+                            <div className="mt-8 space-y-4">
+                                {visibleReservations.map((reservation) => {
+                                    const isCanceled =
+                                        reservation.status.toLowerCase() ===
+                                        "cancelled";
 
-                                            <p className="mt-1 text-sm font-semibold text-zinc-800">
-                                                {formatPrice(
-                                                    reservation.price
-                                                        .amount,
-                                                    reservation.price
-                                                        .currency
-                                                )}
-                                            </p>
-                                        </div>
-
-                                        <span
-                                            className={`inline-block w-fit rounded-full px-4 py-1.5 text-xs font-semibold ${
-                                                isCanceled
-                                                    ? "bg-red-100 text-red-700"
-                                                    : "bg-green-100 text-green-700"
-                                            }`}
+                                    return (
+                                        <Link
+                                            key={reservation.id}
+                                            href={`/player-dashboard/reservation/${reservation.id}`}
+                                            className="block rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:border-green-300 hover:shadow-md"
                                         >
+                                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                                <div>
+                                                    <p className="font-bold text-zinc-900">
+                                                        {reservation.clubName ||
+                                                            "Klub"}
+                                                        {reservation.courtName
+                                                            ? ` · ${reservation.courtName}`
+                                                            : ""}
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm text-zinc-600">
+                                                        {formatDate(
+                                                            reservation.startTime
+                                                        )}
+                                                        {" · "}
+                                                        {formatTime(
+                                                            reservation.startTime
+                                                        )}
+                                                        {" - "}
+                                                        {formatTime(
+                                                            reservation.endTime
+                                                        )}
+                                                    </p>
+
+                                                    <p className="mt-1 text-sm font-semibold text-zinc-800">
+                                                        {formatPrice(
+                                                            reservation.price
+                                                                .amount,
+                                                            reservation.price
+                                                                .currency
+                                                        )}
+                                                    </p>
+                                                </div>
+
+                                                <span
+                                                    className={`inline-block w-fit rounded-full px-4 py-1.5 text-xs font-semibold ${
+                                                        isCanceled
+                                                            ? "bg-red-100 text-red-700"
+                                                            : "bg-green-100 text-green-700"
+                                                    }`}
+                                                >
                                             {reservation.status}
                                         </span>
-                                    </div>
-                                </Link>
-                            );
-                        })}
-                    </div>
-                )}
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
             </section>
 
             <Footer />
         </main>
+    );
+}
+
+export default function MyReservationsPage() {
+    return (
+        <Suspense
+            fallback={
+                <main className="flex min-h-screen flex-col bg-zinc-50">
+                    <PlayerHeader />
+
+                    <section className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
+                        <p className="text-zinc-600">
+                            Učitavanje...
+                        </p>
+                    </section>
+
+                    <Footer />
+                </main>
+            }
+        >
+            <MyReservationsPageContent />
+        </Suspense>
     );
 }
