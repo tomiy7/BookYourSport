@@ -166,7 +166,7 @@ function formatDate(dateString: string) {
 
 function formatTime(dateTime: string) {
     return new Intl.DateTimeFormat(
-        "sr-RS",
+        "sr-Latn-RS",
         {
             hour: "2-digit",
             minute: "2-digit",

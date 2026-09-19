@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ClubOwnerHeader from "../ClubOwnerHeader";
 import { getStoredUser } from "@/lib/user";
 import { getAccessToken } from "@/lib/auth";
+import { apiFetch } from "@/lib/api";
 import {
     getClubs,
     getClubReservations,
@@ -18,7 +19,7 @@ function toDateKey(iso: string) {
 }
 
 function formatTime(iso: string) {
-    return new Date(iso).toLocaleTimeString("sr-RS", {
+    return new Date(iso).toLocaleTimeString("sr-Latn-RS", {
         hour: "2-digit",
         minute: "2-digit",
     });
@@ -31,12 +32,18 @@ function addDays(date: Date, days: number) {
 }
 
 function formatDayLabel(date: Date) {
-    return date.toLocaleDateString("sr-RS", {
+    return date.toLocaleDateString("sr-Latn-RS", {
         weekday: "short",
         day: "2-digit",
         month: "2-digit",
     });
 }
+
+type Customer = {
+    firstName: string;
+    lastName: string;
+    email: string;
+};
 
 const STATUS_LABELS: Record<string, string> = {
     Pending: "Na čekanju",
@@ -149,6 +156,40 @@ export default function ClubReservationsPage() {
             setCancelling(false);
         }
     }
+
+    const [customer, setCustomer] = useState<Customer | null>(null);
+    const [customerLoading, setCustomerLoading] = useState(false);
+
+    // Kad se otvori modal, učitaj ime, prezime i email korisnika.
+    useEffect(() => {
+        if (!selectedReservation) {
+            setCustomer(null);
+            return;
+        }
+
+        let cancelled = false;
+        setCustomer(null);
+        setCustomerLoading(true);
+
+        apiFetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/auth/users/${selectedReservation.userId}/contact`,
+            { method: "GET" }
+        )
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+                if (!cancelled) setCustomer(data);
+            })
+            .catch(() => {
+                if (!cancelled) setCustomer(null);
+            })
+            .finally(() => {
+                if (!cancelled) setCustomerLoading(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedReservation]);
 
     if (loading) {
         return (
@@ -349,8 +390,23 @@ export default function ClubReservationsPage() {
                                 />
 
                                 <DetailRow
-                                    label="ID korisnika"
-                                    value={selectedReservation.userId}
+                                    label="Ime i prezime"
+                                    value={
+                                        customerLoading
+                                            ? "Učitavanje..."
+                                            : customer
+                                                ? `${customer.firstName} ${customer.lastName}`
+                                                : "-"
+                                    }
+                                />
+
+                                <DetailRow
+                                    label="Email"
+                                    value={
+                                        customerLoading
+                                            ? "Učitavanje..."
+                                            : customer?.email ?? "-"
+                                    }
                                 />
                             </div>
 
