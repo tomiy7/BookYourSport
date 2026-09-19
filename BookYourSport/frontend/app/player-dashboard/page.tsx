@@ -363,6 +363,13 @@ export default function PlayerDashboard() {
         setShowTopUpModal,
     ] = useState(false);
 
+    // Putanja na koju vodi popup "Postao si Club Owner".
+    // Dok je null, popup se ne prikazuje.
+    const [
+        ownerWelcomePath,
+        setOwnerWelcomePath,
+    ] = useState<string | null>(null);
+
 
     // ==========================================
     // LOAD USER
@@ -857,11 +864,13 @@ export default function PlayerDashboard() {
                 );
 
 
+            // Umesto automatskog preusmeravanja prikazujemo
+            // popup, a korisnik sam prelazi na Club Owner panel.
             if (
                 newDashboardPath !==
                 "/player-dashboard"
             ) {
-                router.replace(
+                setOwnerWelcomePath(
                     newDashboardPath
                 );
             }
@@ -1691,6 +1700,44 @@ export default function PlayerDashboard() {
                         await handlePaySubscription();
                     }}
                 />
+            )}
+
+            {/* POPUP: POSTAO SI CLUB OWNER */}
+            {ownerWelcomePath && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+
+                    <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl">
+
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                            <span className="text-3xl text-green-700">
+                                ✓
+                            </span>
+                        </div>
+
+                        <h2 className="mt-6 text-2xl font-bold text-zinc-900">
+                            Čestitamo, postao si Club Owner!
+                        </h2>
+
+                        <p className="mt-3 leading-6 text-zinc-600">
+                            Ugovor je potpisan i pretplata je uspešno plaćena.
+                            <br />
+                            Tvoj Club Owner nalog je aktivan. Sada možeš da
+                            napraviš svoj klub i dodaš terene.
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                router.replace(ownerWelcomePath)
+                            }
+                            className="mt-7 w-full rounded-xl bg-green-700 py-3 font-semibold text-white transition hover:bg-green-800"
+                        >
+                            Idi na Club Owner panel
+                        </button>
+
+                    </div>
+
+                </div>
             )}
 
         </main>
