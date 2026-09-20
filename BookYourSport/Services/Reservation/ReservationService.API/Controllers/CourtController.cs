@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using ReservationService.Application.DTOs;
 using ReservationService.Application.Interfaces;
 using ReservationService.Domain.Common;
+using ReservationService.Domain.Enums;
 using ReservationService.Domain.Exceptions;
 
 namespace ReservationService.API.Controllers;
@@ -14,12 +15,18 @@ public class CourtController : ControllerBase
 {
     private readonly ICourtService  _courtService;
     private readonly IClubService _clubService;
+    private readonly IReservationService _reservationService;
     private readonly ILogger<CourtController> _logger;
 
-    public CourtController(ICourtService courtService, IClubService clubService, ILogger<CourtController> logger)
+    public CourtController(
+        ICourtService courtService,
+        IClubService clubService,
+        IReservationService reservationService,
+        ILogger<CourtController> logger)
     {
         _courtService = courtService;
         _clubService = clubService;
+        _reservationService = reservationService;
         _logger = logger;
     }
 
@@ -90,6 +97,25 @@ public class CourtController : ControllerBase
             if (updated == null)
                 return NotFound(new { error = "COURT_NOT_FOUND" });
             
+            if (!updated.IsActive)
+            {
+                var (cancelled, failed) = await _reservationService
+                    .CancelUpcomingReservationsForCourtAsync(clubId, courtId, CancellationReasons.CourtDeactivated);
+
+                if (failed > 0)
+                {
+                    return BadRequest(new
+                    {
+                        error = "RESERVATIONS_NOT_FULLY_CANCELLED",
+                        message = $"Coutrt deactivated, but {failed} reservations failed to cancel. Try again."
+                    });
+                }
+
+                if (cancelled > 0)
+                    _logger.LogInformation(
+                        "Court {CourtId} deactivated: {Count} reservation(s) cancelled and refunded", courtId, cancelled);
+            }
+            
             return Ok(updated);
         }
         catch (ReservationDomainException e)
@@ -108,6 +134,18 @@ public class CourtController : ControllerBase
     {
         if (!User.IsInRole(Roles.Admin) && !await IsOwner(clubId))
             return Forbid();
+        
+        var (_, failed) = await _reservationService
+            .CancelUpcomingReservationsForCourtAsync(clubId, courtId, CancellationReasons.CourtRemoved);
+
+        if (failed > 0)
+        {
+            return BadRequest(new
+            {
+                error = "RESERVATIONS_NOT_FULLY_CANCELLED",
+                message = $"Teren nije obrisan jer {failed} rezervacija nije uspešno otkazana. Pokušaj ponovo."
+            });
+        }
         
         var deleted = await _courtService.DeleteCourtAsync(clubId, courtId);
         if (!deleted)

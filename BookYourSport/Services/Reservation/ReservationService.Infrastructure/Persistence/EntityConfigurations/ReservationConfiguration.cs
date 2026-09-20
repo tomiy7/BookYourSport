@@ -13,6 +13,8 @@ public class ReservationConfiguration : IEntityTypeConfiguration<Reservation>
         builder.Property(r => r.Id).ValueGeneratedNever();
         
         builder.Property(r => r.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(20);
+
+        builder.Property(r => r.CancellationReason).HasColumnName("cancellation_reason").HasMaxLength(50);
         
         builder.OwnsOne(r => r.Price, price =>
         {

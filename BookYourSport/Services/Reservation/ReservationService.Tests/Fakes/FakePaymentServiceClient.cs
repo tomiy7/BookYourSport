@@ -6,6 +6,8 @@ public class FakePaymentServiceClient : IPaymentServiceClient
 {
     public bool ChargeCalled { get; private set; }
     public bool RefundCalled { get; private set; }
+    
+    public bool ThrowOnRefund { get; set; }
 
     public Guid? LastReservationId { get; private set; }
 
@@ -27,6 +29,9 @@ public class FakePaymentServiceClient : IPaymentServiceClient
         DateTime reservationStart,
         DateTime cancellationTime)
     {
+        if (ThrowOnRefund)
+            throw new InvalidOperationException("Simulated refund failure.");
+        
         RefundCalled = true;
         LastReservationId = reservationId;
 

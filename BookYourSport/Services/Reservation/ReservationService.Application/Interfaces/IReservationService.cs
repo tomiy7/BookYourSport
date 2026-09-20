@@ -9,4 +9,6 @@ public interface IReservationService
     Task<bool> CancelReservationAsync(Guid reservationId);
     Task<List<ReservationDto>> GetByUserIdAsync(Guid userId);
     Task<List<ReservationDto>> GetByClubIdAsync(Guid clubId);
+    
+    Task<(int Cancelled, int Failed)> CancelUpcomingReservationsForCourtAsync(Guid clubId, Guid courtId, string reason);
 }
