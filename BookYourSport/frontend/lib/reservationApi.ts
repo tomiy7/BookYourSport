@@ -22,6 +22,8 @@ export type Court = {
     isIndoor: boolean;
     pricePerHour: Price;
     isActive: boolean;
+    // Popunjeno samo kad je ovaj PUT zahtev stvarno otkazao rezervacije (deaktivacija terena).
+    cancelledReservations?: number;
 };
 
 export type WorkingHours = {
@@ -59,6 +61,15 @@ export type Reservation = {
     endTime: string;
     price: Price;
     status: string;
+    // Popunjeno samo ako je rezervaciju otkazao klub (npr. "CourtDeactivated").
+    cancellationReason?: string | null;
+};
+
+// Rezervacija onako kako je vidi vlasnik kluba: bez ID-a korisnika,
+// ali sa imenom i emailom igrača koji je zakazao termin.
+export type ClubReservation = Omit<Reservation, "userId"> & {
+    customerName?: string | null;
+    customerEmail?: string | null;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -347,7 +358,7 @@ export async function deleteCourt(
 
 export async function getClubReservations(
     clubId: string
-): Promise<Reservation[]> {
+): Promise<ClubReservation[]> {
     const response = await apiFetch(
         `${API_URL}/reservation/api/reservations/club/${clubId}`,
         {

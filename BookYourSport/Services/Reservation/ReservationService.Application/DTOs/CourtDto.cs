@@ -18,6 +18,8 @@ public class CourtDto
     public bool IsIndoor { get; set; }
     public PriceDto PricePerHour { get; set; } = new();
     public bool IsActive { get; set; }
+    public int CancelledReservations { get; set; }
+
 }
 
 public class CreateCourtDto

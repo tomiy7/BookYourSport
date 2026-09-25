@@ -397,9 +397,15 @@ public class ReservationBookingService : IReservationService
             reservation.StartTime,
             cancellationTime);
 
+        // Rezervaciju otkazujemo ODMAH, sinhrono (isti obrazac kao Confirm()
+        // posle uspešne naplate). Ranije se čekao RabbitMQ event da otkaže
+        // rezervaciju, što je izazivalo trku sa drugim pisanjima u bazu.
+        reservation.Cancel();
+
+        await _reservationRepository.SaveChangesAsync();
+
         _logger.LogInformation(
-            "Refund request successfully processed for reservation {ReservationId}. " +
-            "Reservation cancellation will be completed through the payment event flow.",
+            "Reservation {ReservationId} cancelled and refund processed.",
             reservation.Id);
 
         return true;
@@ -527,7 +533,10 @@ public class ReservationBookingService : IReservationService
             },
 
             Status =
-                reservation.Status.ToString()
+                reservation.Status.ToString(),
+
+            CancellationReason =
+                reservation.CancellationReason
         };
     }
 }

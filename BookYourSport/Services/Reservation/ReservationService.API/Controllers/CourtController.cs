@@ -96,7 +96,10 @@ public class CourtController : ControllerBase
             var updated = await _courtService.UpdateCourtAsync(clubId, courtId, courtDto);
             if (updated == null)
                 return NotFound(new { error = "COURT_NOT_FOUND" });
-            
+
+            // Neaktivan teren ne sme imati buduće rezervacije: otkazujemo ih
+            // i igračima vraćamo pun iznos. Poziva se i kad je teren već bio neaktivan,
+            // pa ponovno čuvanje ispravlja rezervacije koje nisu uspele da se otkažu.
             if (!updated.IsActive)
             {
                 var (cancelled, failed) = await _reservationService
@@ -107,13 +110,16 @@ public class CourtController : ControllerBase
                     return BadRequest(new
                     {
                         error = "RESERVATIONS_NOT_FULLY_CANCELLED",
-                        message = $"Coutrt deactivated, but {failed} reservations failed to cancel. Try again."
+                        message = $"Teren je deaktiviran, ali {failed} rezervacija nije uspešno otkazana. Pokušaj ponovo."
                     });
                 }
 
                 if (cancelled > 0)
                     _logger.LogInformation(
                         "Court {CourtId} deactivated: {Count} reservation(s) cancelled and refunded", courtId, cancelled);
+
+                // Frontend prikazuje TAČAN broj, ne pretpostavku od pre poziva.
+                updated.CancelledReservations = cancelled;
             }
             
             return Ok(updated);
@@ -134,7 +140,9 @@ public class CourtController : ControllerBase
     {
         if (!User.IsInRole(Roles.Admin) && !await IsOwner(clubId))
             return Forbid();
-        
+
+        // Pre brisanja terena otkazujemo buduće rezervacije i vraćamo novac igračima.
+        // Ako neka ne uspe, teren se ne briše da igrač ne bi ostao bez para i bez rezervacije.
         var (_, failed) = await _reservationService
             .CancelUpcomingReservationsForCourtAsync(clubId, courtId, CancellationReasons.CourtRemoved);
 

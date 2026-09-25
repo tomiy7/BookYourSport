@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 
 import PlayerHeader from "../../PlayerHeader";
 import Footer from "../../../Footer";
+import { getCancellationMessage } from "@/lib/cancellation";
 
 type Price = {
     amount: number;
@@ -21,6 +22,7 @@ type Reservation = {
     endTime: string;
     price: Price;
     status: string;
+    cancellationReason?: string | null;
 };
 
 type Address = {
@@ -398,6 +400,22 @@ export default function ReservationDetailsPage() {
                     <h1 className="mt-3 text-3xl font-bold text-zinc-900">
                         Detalji rezervacije
                     </h1>
+
+                    {getCancellationMessage(
+                        reservation.cancellationReason
+                    ) && (
+                        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm leading-6 text-red-700">
+                            <p className="font-semibold">
+                                Rezervaciju je otkazao klub
+                            </p>
+
+                            <p className="mt-1">
+                                {getCancellationMessage(
+                                    reservation.cancellationReason
+                                )}
+                            </p>
+                        </div>
+                    )}
 
                     {/* KLUB I TEREN */}
 

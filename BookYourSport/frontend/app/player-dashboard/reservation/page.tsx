@@ -13,6 +13,7 @@ import {
     Reservation,
     Club,
 } from "@/lib/reservationApi";
+import { getCancellationMessage } from "@/lib/cancellation";
 
 function getUserIdFromToken(token: string): string | null {
     try {
@@ -409,6 +410,17 @@ function MyReservationsPageContent() {
                                             {reservation.status}
                                         </span>
                                             </div>
+
+                                            {isCanceled &&
+                                                getCancellationMessage(
+                                                    reservation.cancellationReason
+                                                ) && (
+                                                    <p className="mt-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+                                                        {getCancellationMessage(
+                                                            reservation.cancellationReason
+                                                        )}
+                                                    </p>
+                                                )}
                                         </Link>
                                     );
                                 })}

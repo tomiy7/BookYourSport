@@ -263,27 +263,19 @@ public class RabbitMqEventConsumer : BackgroundService
                                     }
 
 
-                                    // Ako je već otkazana,
-                                    // event je već obrađen.
-                                    if (reservation.Status
-                                        .ToString()
-                                        .Equals(
-                                            "Cancelled",
-                                            StringComparison
-                                                .OrdinalIgnoreCase))
-                                    {
-                                        Console.WriteLine(
-                                            "[RabbitMQ] Reservation is already cancelled. Ignoring duplicate RefundSucceeded event.");
-
-                                        break;
-                                    }
-
-
-                                    reservation.Cancel();
-
-
-                                    await reservationRepository
-                                        .SaveChangesAsync();
+                                    // Otkazivanje rezervacije se OD SADA uvek radi sinhrono,
+                                    // odmah nakon uspešnog poziva ka Payment Service-u
+                                    // (u ReservationBookingService.CancelReservationAsync i
+                                    // CancelUpcomingReservationsForCourtAsync), isti obrazac
+                                    // kao Confirm() posle uspešne naplate.
+                                    //
+                                    // Namerno OVDE VIŠE NE diramo status/razlog rezervacije:
+                                    // dva nezavisna pisca (ovaj event + sinhrono otkazivanje)
+                                    // su izazivala trku pri kojoj bi se razlog otkazivanja
+                                    // izgubio. Sinhroni put je sad jedini izvor istine;
+                                    // ovaj event samo evidentiramo radi vidljivosti u logu.
+                                    Console.WriteLine(
+                                        $"[RabbitMQ] RefundSucceeded for reservation {refundSucceeded.ReservationId} noted (cancellation handled synchronously elsewhere).");
 
 
                                     break;
@@ -327,27 +319,11 @@ public class RabbitMqEventConsumer : BackgroundService
                                     }
 
 
-                                    // Ako je već otkazana,
-                                    // nemoj ponovo pokušavati.
-                                    if (reservation.Status
-                                        .ToString()
-                                        .Equals(
-                                            "Cancelled",
-                                            StringComparison
-                                                .OrdinalIgnoreCase))
-                                    {
-                                        Console.WriteLine(
-                                            "[RabbitMQ] Reservation is already cancelled. Ignoring duplicate ReservationCancelled event.");
-
-                                        break;
-                                    }
-
-
-                                    reservation.Cancel();
-
-
-                                    await reservationRepository
-                                        .SaveChangesAsync();
+                                    // Isti razlog kao kod RefundSucceeded gore:
+                                    // otkazivanje se radi sinhrono na mestu koje inicira
+                                    // refund, pa ovde više ništa ne pišemo u bazu.
+                                    Console.WriteLine(
+                                        $"[RabbitMQ] ReservationCancelled for reservation {reservationCancelled.ReservationId} noted (cancellation handled synchronously elsewhere).");
 
 
                                     break;

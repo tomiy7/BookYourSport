@@ -7,12 +7,14 @@ import { getStoredUser } from "@/lib/user";
 import { getAccessToken } from "@/lib/auth";
 import {
     getClubs,
+    getClubReservations,
     createCourt,
     updateCourt,
     deleteCourt,
     type Club,
     type Court,
     type CourtPayload,
+    type ClubReservation,
 } from "@/lib/reservationApi";
 
 const SURFACE_TYPES = [
@@ -34,6 +36,21 @@ function surfaceLabel(value: number | string) {
 // pa valuta nije slobodan unos.
 const COURT_CURRENCY = "RSD";
 
+// Broj budućih plaćenih rezervacija na jednom terenu.
+function countUpcomingForCourt(
+    reservations: ClubReservation[],
+    courtId: string
+) {
+    const now = Date.now();
+
+    return reservations.filter(
+        (r) =>
+            r.courtId === courtId &&
+            r.status === "Confirmed" &&
+            new Date(r.startTime).getTime() > now
+    ).length;
+}
+
 const emptyForm: CourtPayload = {
     name: "",
     surfaceType: 0,
@@ -54,6 +71,7 @@ export default function CourtsPage() {
     const [form, setForm] = useState<CourtPayload>(emptyForm);
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState("");
+    const [notice, setNotice] = useState("");
 
     function loadClub() {
         const user = getStoredUser();
@@ -152,14 +170,46 @@ export default function CourtsPage() {
         }
     }
 
+    // Broj budućih plaćenih rezervacija na terenu.
+    // Koristi se za upozorenje pre deaktivacije ili brisanja terena.
+    async function countUpcomingReservations(court: Court) {
+        if (!club) return 0;
+
+        try {
+            const reservations = await getClubReservations(club.id);
+
+            return countUpcomingForCourt(reservations, court.id);
+        } catch {
+            return 0;
+        }
+    }
+
     async function toggleActive(court: Court) {
         if (!club) return;
 
         const token = getAccessToken();
         if (!token) return;
 
+        setError("");
+        setNotice("");
+
+        const isDeactivating = court.isActive;
+        let upcoming = 0;
+
+        // Pre deaktivacije upozori vlasnika šta se dešava sa rezervacijama.
+        if (isDeactivating) {
+            upcoming = await countUpcomingReservations(court);
+
+            const message =
+                upcoming > 0
+                    ? `Teren "${court.name}" ima buduće rezervacije. Broj rezervacija: ${upcoming}.\n\nAko ga deaktiviraš, sve će biti otkazane, igračima će biti vraćen pun iznos i dobiće obaveštenje u aplikaciji. Nastaviti?`
+                    : `Deaktiviraj teren "${court.name}"? Igrači ga više neće videti pri rezervaciji.`;
+
+            if (!window.confirm(message)) return;
+        }
+
         try {
-            await updateCourt(
+            const result = await updateCourt(
                 club.id,
                 court.id,
                 {
@@ -172,6 +222,22 @@ export default function CourtsPage() {
                 }
             );
 
+            // Prikazujemo STVARAN broj koji je backend otkazao,
+            // ne pretpostavku od pre poziva (upcoming).
+            const actuallyCancelled = result.cancelledReservations ?? 0;
+
+            if (isDeactivating && actuallyCancelled > 0) {
+                setNotice(
+                    `Teren je deaktiviran. Otkazano rezervacija: ${actuallyCancelled}. Igračima je vraćen pun iznos.`
+                );
+            } else if (isDeactivating && upcoming > 0 && actuallyCancelled === 0) {
+                // Predviđali smo otkazivanja, ali backend ih nije izvršio —
+                // vredno je proveriti stanje ručno (npr. rezervacija je već bila otkazana).
+                setNotice(
+                    "Teren je deaktiviran. Napomena: očekivane rezervacije nisu otkazane od strane sistema — proveri ih ručno."
+                );
+            }
+
             loadClub();
         } catch (err) {
             setError(
@@ -179,14 +245,21 @@ export default function CourtsPage() {
                     ? err.message
                     : "Izmena statusa terena nije uspela."
             );
+
+            // Teren je možda ipak deaktiviran, pa osvežavamo prikaz.
+            loadClub();
         }
     }
 
     async function handleDeleteCourt(court: Court) {
         if (!club) return;
 
+        const upcoming = await countUpcomingReservations(court);
+
         const confirmed = window.confirm(
-            `Obriši teren "${court.name}"? Ova akcija je nepovratna.`
+            upcoming > 0
+                ? `Teren "${court.name}" ima buduće rezervacije. Broj rezervacija: ${upcoming}.\n\nAko ga obrišeš, sve će biti otkazane, a igračima će biti vraćen pun iznos. Ova akcija je nepovratna. Nastaviti?`
+                : `Obriši teren "${court.name}"? Ova akcija je nepovratna.`
         );
 
         if (!confirmed) return;
@@ -194,8 +267,18 @@ export default function CourtsPage() {
         const token = getAccessToken();
         if (!token) return;
 
+        setError("");
+        setNotice("");
+
         try {
             await deleteCourt(club.id, court.id);
+
+            if (upcoming > 0) {
+                setNotice(
+                    `Teren je obrisan. Otkazano rezervacija: ${upcoming}. Igračima je vraćen pun iznos.`
+                );
+            }
+
             loadClub();
         } catch (err) {
             setError(
@@ -203,6 +286,8 @@ export default function CourtsPage() {
                     ? err.message
                     : "Brisanje terena nije uspelo."
             );
+
+            loadClub();
         }
     }
 
@@ -254,6 +339,12 @@ export default function CourtsPage() {
                 {error && (
                     <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
                         {error}
+                    </div>
+                )}
+
+                {notice && (
+                    <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                        {notice}
                     </div>
                 )}
 

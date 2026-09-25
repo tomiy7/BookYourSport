@@ -36,6 +36,8 @@ import {
     signContract,
 } from "@/lib/contractApi";
 
+import CancelledReservationsNotice from "./CancelledReservationsNotice";
+
 
 interface User {
     id?: string;
@@ -1739,6 +1741,8 @@ export default function PlayerDashboard() {
 
                 </div>
             )}
+
+            <CancelledReservationsNotice />
 
         </main>
     );
