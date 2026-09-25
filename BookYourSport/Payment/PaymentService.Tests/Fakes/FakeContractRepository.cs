@@ -27,6 +27,12 @@ public class FakeContractRepository : IContractRepository
         return Task.FromResult(Contract);
     }
 
+    public Task<Contract?> GetSignedByUserIdAsync(Guid userId)
+    {
+        return Task.FromResult(
+            Contract?.Status == ContractStatus.Signed ? Contract : null);
+    }
+
     public Task SaveChangesAsync()
     {
         SaveChangesCalled = true;

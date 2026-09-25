@@ -1,53 +1,75 @@
 ﻿using PaymentService.Application.Commands.PaySubscription;
-using PaymentService.Application.Interfaces;
+using PaymentService.Application.Common;
+using PaymentService.Domain.Entities;
 using PaymentService.Tests.Fakes;
 
 namespace PaymentService.Tests.Application;
 
 public class PaySubscriptionHandlerTests
 {
-    // Testira uspešnu uplatu pretplate za korisnika sa potpisanim ugovorom.
-    [Fact]
-    public async Task Handle_ShouldProcessSuccessfulPayment()
+    private static SubscriptionSettings Settings() => new()
     {
-        var userId = Guid.NewGuid();
+        Amount = 3000,
+        Currency = "RSD"
+    };
 
+    private static FakeContractRepository SignedContractRepo(Guid userId)
+    {
         var contract = new PaymentService.Domain.Contract.Contract(
             userId,
             "documents/contracts/test-contract.pdf");
 
         contract.Sign();
 
-        var contractRepository = new FakeContractRepository
+        return new FakeContractRepository { Contract = contract };
+    }
+
+    // Testira uspešnu uplatu pretplate za korisnika sa potpisanim ugovorom.
+    [Fact]
+    public async Task Handle_ShouldProcessSuccessfulPayment()
+    {
+        var userId = Guid.NewGuid();
+
+        var contractRepository = SignedContractRepo(userId);
+
+        var account = new CreditAccount(userId);
+        account.TopUp(5000, Guid.NewGuid());
+
+        var creditAccountRepository = new FakeCreditAccountRepository
         {
-            Contract = contract
+            Account = account
         };
 
-        var paymentProcessor = new FakePaymentProcessor();
-
-        var authServiceClient = new FakeAuthServiceClient();
+        var authServiceClient = new FakeAuthServiceClient
+        {
+            User = new PaymentService.Application.DTOs.AuthUserDto
+            {
+                Id = userId,
+                FirstName = "Test",
+                LastName = "ClubOwner",
+                ApprovalStatus = "approved"
+            }
+        };
 
         var handler = new PaySubscriptionHandler(
-            paymentProcessor,
             authServiceClient,
-            contractRepository);
+            contractRepository,
+            creditAccountRepository,
+            Settings());
 
-        var command = new PaySubscriptionCommand(
-            userId,
-            100,
-            "EUR");
+        var command = new PaySubscriptionCommand(userId);
 
         var result = await handler.Handle(command);
 
         Assert.True(result.IsSuccessful);
         Assert.NotEqual(Guid.Empty, result.PaymentId);
-
-        Assert.True(
-            authServiceClient.SubscriptionPaidNotificationSent);
+        Assert.Equal(2000, account.Balance);
+        Assert.True(authServiceClient.SubscriptionPaidNotificationSent);
     }
-    // Testira ponašanje kada ugovor korisnika ne postoji.
+
+    // Testira ponašanje kada potpisan ugovor korisnika ne postoji.
     [Fact]
-    public async Task Handle_ShouldThrow_WhenContractDoesNotExist()
+    public async Task Handle_ShouldThrow_WhenSignedContractDoesNotExist()
     {
         var userId = Guid.NewGuid();
 
@@ -56,26 +78,22 @@ public class PaySubscriptionHandlerTests
             Contract = null
         };
 
-        var paymentProcessor = new FakePaymentProcessor();
-        var authServiceClient = new FakeAuthServiceClient();
-
         var handler = new PaySubscriptionHandler(
-            paymentProcessor,
-            authServiceClient,
-            contractRepository);
+            new FakeAuthServiceClient(),
+            contractRepository,
+            new FakeCreditAccountRepository(),
+            Settings());
 
-        var command = new PaySubscriptionCommand(
-            userId,
-            100,
-            "EUR");
+        var command = new PaySubscriptionCommand(userId);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => handler.Handle(command));
 
         Assert.Equal(
-            "Contract was not found.",
+            "A signed contract was not found.",
             exception.Message);
     }
+
     // Testira da uplata pretplate nije dozvoljena dok ugovor nije potpisan.
     [Fact]
     public async Task Handle_ShouldThrow_WhenContractIsNotSigned()
@@ -86,98 +104,89 @@ public class PaySubscriptionHandlerTests
             userId,
             "documents/contracts/test-contract.pdf");
 
+        // Ugovor postoji, ali nije potpisan -> GetSignedByUserIdAsync vraća null.
         var contractRepository = new FakeContractRepository
         {
             Contract = contract
         };
 
-        var paymentProcessor = new FakePaymentProcessor();
-        var authServiceClient = new FakeAuthServiceClient();
-
         var handler = new PaySubscriptionHandler(
-            paymentProcessor,
-            authServiceClient,
-            contractRepository);
+            new FakeAuthServiceClient(),
+            contractRepository,
+            new FakeCreditAccountRepository(),
+            Settings());
 
-        var command = new PaySubscriptionCommand(
-            userId,
-            100,
-            "EUR");
+        var command = new PaySubscriptionCommand(userId);
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => handler.Handle(command));
 
         Assert.Equal(
-            "Contract must be signed before subscription payment.",
+            "A signed contract was not found.",
             exception.Message);
     }
-    // Testira da se Auth Service ne obaveštava kada uplata nije uspešna.
+
+    // Testira da se Auth Service ne obaveštava kada nema dovoljno sredstava.
     [Fact]
-    public async Task Handle_ShouldNotNotifyAuth_WhenPaymentFails()
+    public async Task Handle_ShouldNotNotifyAuth_WhenBalanceIsInsufficient()
     {
         var userId = Guid.NewGuid();
 
-        var contract = new PaymentService.Domain.Contract.Contract(
-            userId,
-            "documents/contracts/test-contract.pdf");
+        var contractRepository = SignedContractRepo(userId);
 
-        contract.Sign();
+        var account = new CreditAccount(userId);
+        account.TopUp(1000, Guid.NewGuid());
 
-        var contractRepository = new FakeContractRepository
+        var creditAccountRepository = new FakeCreditAccountRepository
         {
-            Contract = contract
+            Account = account
         };
 
-        var paymentProcessor = new FakePaymentProcessor
+        var authServiceClient = new FakeAuthServiceClient
         {
-            Result = new PaymentResult
+            User = new PaymentService.Application.DTOs.AuthUserDto
             {
-                IsSuccessful = false,
-                PaymentId = Guid.NewGuid()
+                Id = userId,
+                FirstName = "Test",
+                LastName = "ClubOwner",
+                ApprovalStatus = "approved"
             }
         };
 
-        var authServiceClient = new FakeAuthServiceClient();
-
         var handler = new PaySubscriptionHandler(
-            paymentProcessor,
             authServiceClient,
-            contractRepository);
+            contractRepository,
+            creditAccountRepository,
+            Settings());
 
-        var command = new PaySubscriptionCommand(
-            userId,
-            100,
-            "EUR");
+        var command = new PaySubscriptionCommand(userId);
 
-        var result = await handler.Handle(command);
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => handler.Handle(command));
 
-        Assert.False(result.IsSuccessful);
-
-        Assert.False(
-            authServiceClient.SubscriptionPaidNotificationSent);
+        Assert.False(authServiceClient.SubscriptionPaidNotificationSent);
     }
-    // Testira da nevalidan iznos pretplate izaziva izuzetak.
+
+    // Testira da nevalidna (backend) cena pretplate izaziva izuzetak.
     [Theory]
     [InlineData(0)]
     [InlineData(-100)]
-    public async Task Handle_ShouldThrow_WhenAmountIsNotPositive(
+    public async Task Handle_ShouldThrow_WhenSubscriptionAmountIsNotPositive(
         decimal amount)
     {
         var handler = new PaySubscriptionHandler(
-            new FakePaymentProcessor(),
             new FakeAuthServiceClient(),
-            new FakeContractRepository());
+            new FakeContractRepository(),
+            new FakeCreditAccountRepository(),
+            new SubscriptionSettings { Amount = amount, Currency = "RSD" });
 
-        var command = new PaySubscriptionCommand(
-            Guid.NewGuid(),
-            amount,
-            "EUR");
+        var command = new PaySubscriptionCommand(Guid.NewGuid());
 
-        var exception = await Assert.ThrowsAsync<ArgumentException>(
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => handler.Handle(command));
 
         Assert.Equal(
-            "Subscription amount must be greater than zero. (Parameter 'Amount')",
+            "Subscription amount must be greater than zero.",
             exception.Message);
     }
 }

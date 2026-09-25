@@ -76,7 +76,7 @@ public class ClubSearchServiceTests
         {
             Latitude = 44.815,
             Longitude = 20.487,
-            SortBy = "distance"
+            SortBy = new List<string> { "distance_asc" }
         };
 
         // Act
@@ -223,7 +223,7 @@ public class ClubSearchServiceTests
 
         var request = new SearchClubsRequestDto
         {
-            SurfaceType = SurfaceType.Clay
+            SurfaceTypes = new List<SurfaceType> { SurfaceType.Clay }
         };
 
         // Act
@@ -356,7 +356,7 @@ public class ClubSearchServiceTests
 
         var request = new SearchClubsRequestDto
         {
-            SurfaceType = SurfaceType.Hard
+            SurfaceTypes = new List<SurfaceType> { SurfaceType.Hard }
         };
 
         // Act
@@ -379,7 +379,7 @@ public class ClubSearchServiceTests
 
         var request = new SearchClubsRequestDto
         {
-            SortBy = "name"
+            SortBy = new List<string> { "name_asc" }
         };
 
         // Act
@@ -411,7 +411,7 @@ public class ClubSearchServiceTests
 
         var request = new SearchClubsRequestDto
         {
-            SortBy = "price_asc"
+            SortBy = new List<string> { "price_asc" }
         };
 
         // Act
@@ -442,7 +442,7 @@ public class ClubSearchServiceTests
 
         var request = new SearchClubsRequestDto
         {
-            SortBy = "price_desc"
+            SortBy = new List<string> { "price_desc" }
         };
 
         // Act
@@ -528,7 +528,7 @@ public class ClubSearchServiceTests
         {
             Page = 2,
             PageSize = 2,
-            SortBy = "name"
+            SortBy = new List<string> { "name_asc" }
         };
 
         // Act
