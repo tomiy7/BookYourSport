@@ -2,6 +2,9 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using ReservationService.Application.DTOs;
 using ReservationService.Application.Services;
+using ReservationService.Domain.Entities;
+using ReservationService.Domain.Enums;
+using ReservationService.Domain.ValueObjects;
 using ReservationService.Domain.Exceptions;
 using ReservationService.Tests.Fakes;
 using ReservationService.Tests.TestHelpers;
@@ -27,7 +30,7 @@ public class ReservationBookingServiceTests
     }
 
     [Fact]
-    public async Task CreateReservationAsync_ValidSlot_ReturnsPendingReservation()
+    public async Task CreateReservationAsync_ValidSlot_ReturnsConfirmedReservation()
     {
         var club = TestData.ActiveClub();
         var court = TestData.AddActiveCourt(club, price: 1500m);
@@ -39,7 +42,7 @@ public class ReservationBookingServiceTests
         var result = await _sut.CreateReservationAsync(club.Id, court.Id, dto);
 
         Assert.NotNull(result);
-        Assert.Equal("Pending", result!.Status);
+        Assert.Equal("Confirmed", result!.Status);
         Assert.Equal(1500m, result.Price.Amount);
     }
 
@@ -195,5 +198,93 @@ public class ReservationBookingServiceTests
         var result = await _sut.CancelReservationAsync(Guid.NewGuid());
 
         Assert.False(result);
+    }
+
+    private static Reservation SeedConfirmedReservation(Guid clubId, Guid courtId, decimal price = 1500m)
+    {
+        var start = TestData.NextMondayAt(9);
+
+        var reservation = Reservation.Create(
+            courtId,
+            clubId,
+            Guid.NewGuid(),
+            start,
+            start.AddHours(1),
+            Price.Create(price));
+
+        reservation.Confirm();
+
+        return reservation;
+    }
+
+    [Fact]
+    public async Task CancelUpcomingReservationsForCourtAsync_ConfirmedReservation_RefundsAndCancelsWithReason()
+    {
+        var club = TestData.ActiveClub();
+        var court = TestData.AddActiveCourt(club);
+        _clubRepository.Seed(club);
+
+        var reservation = SeedConfirmedReservation(club.Id, court.Id);
+        _reservationRepository.Seed(reservation);
+
+        var (cancelled, failed) = await _sut.CancelUpcomingReservationsForCourtAsync(
+            club.Id,
+            court.Id,
+            CancellationReasons.CourtDeactivated);
+
+        Assert.Equal(1, cancelled);
+        Assert.Equal(0, failed);
+        Assert.True(_paymentServiceClient.RefundCalled);
+        Assert.Equal(reservation.Id, _paymentServiceClient.LastReservationId);
+        Assert.Equal(ReservationStatus.Cancelled, reservation.Status);
+        Assert.Equal(CancellationReasons.CourtDeactivated, reservation.CancellationReason);
+    }
+
+    [Fact]
+    public async Task CancelUpcomingReservationsForCourtAsync_ReservationOnAnotherCourt_IsNotTouched()
+    {
+        var club = TestData.ActiveClub();
+        var deactivatedCourt = TestData.AddActiveCourt(club, "Teren 1");
+        var otherCourt = TestData.AddActiveCourt(club, "Teren 2");
+        _clubRepository.Seed(club);
+
+        var reservation = SeedConfirmedReservation(club.Id, otherCourt.Id);
+        _reservationRepository.Seed(reservation);
+
+        var (cancelled, failed) = await _sut.CancelUpcomingReservationsForCourtAsync(
+            club.Id,
+            deactivatedCourt.Id,
+            CancellationReasons.CourtDeactivated);
+
+        Assert.Equal(0, cancelled);
+        Assert.Equal(0, failed);
+        Assert.False(_paymentServiceClient.RefundCalled);
+        Assert.Equal(ReservationStatus.Confirmed, reservation.Status);
+        Assert.Null(reservation.CancellationReason);
+    }
+
+    [Fact]
+    public async Task CancelUpcomingReservationsForCourtAsync_RefundFails_ReservationStaysConfirmed()
+    {
+        var club = TestData.ActiveClub();
+        var court = TestData.AddActiveCourt(club);
+        _clubRepository.Seed(club);
+
+        var reservation = SeedConfirmedReservation(club.Id, court.Id);
+        _reservationRepository.Seed(reservation);
+
+        _paymentServiceClient.ThrowOnRefund = true;
+
+        var (cancelled, failed) = await _sut.CancelUpcomingReservationsForCourtAsync(
+            club.Id,
+            court.Id,
+            CancellationReasons.CourtDeactivated);
+
+        Assert.Equal(0, cancelled);
+        Assert.Equal(1, failed);
+
+        // Novac nije vraćen, pa rezervacija ne sme biti otkazana.
+        Assert.Equal(ReservationStatus.Confirmed, reservation.Status);
+        Assert.Null(reservation.CancellationReason);
     }
 }

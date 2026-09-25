@@ -63,7 +63,7 @@ function getUserIdFromToken(token: string): string | null {
 }
 
 function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString("sr-RS", {
+    return new Date(dateString).toLocaleDateString("sr-Latn-RS", {
         day: "2-digit",
         month: "long",
         year: "numeric",
@@ -71,7 +71,7 @@ function formatDate(dateString: string) {
 }
 
 function formatTime(dateString: string) {
-    return new Date(dateString).toLocaleTimeString("sr-RS", {
+    return new Date(dateString).toLocaleTimeString("sr-Latn-RS", {
         hour: "2-digit",
         minute: "2-digit",
     });

@@ -30,12 +30,16 @@ function surfaceLabel(value: number | string) {
     );
 }
 
+// Sistem trenutno radi samo sa dinarima (novčanik i plaćanje su u RSD),
+// pa valuta nije slobodan unos.
+const COURT_CURRENCY = "RSD";
+
 const emptyForm: CourtPayload = {
     name: "",
     surfaceType: 0,
     isIndoor: false,
     pricePerHour: 0,
-    currency: "RSD",
+    currency: COURT_CURRENCY,
 };
 
 export default function CourtsPage() {
@@ -95,7 +99,7 @@ export default function CourtsPage() {
             surfaceType: Number(court.surfaceType),
             isIndoor: court.isIndoor,
             pricePerHour: court.pricePerHour.amount,
-            currency: court.pricePerHour.currency,
+            currency: COURT_CURRENCY,
         });
         setFormError("");
         setShowForm(true);
@@ -121,10 +125,17 @@ export default function CourtsPage() {
                 await updateCourt(
                     club.id,
                     editingCourt.id,
-                    { ...form, isActive: editingCourt.isActive }
+                    {
+                        ...form,
+                        currency: COURT_CURRENCY,
+                        isActive: editingCourt.isActive,
+                    }
                 );
             } else {
-                await createCourt(club.id, form);
+                await createCourt(club.id, {
+                    ...form,
+                    currency: COURT_CURRENCY,
+                });
             }
 
             setShowForm(false);
@@ -156,7 +167,7 @@ export default function CourtsPage() {
                     surfaceType: Number(court.surfaceType),
                     isIndoor: court.isIndoor,
                     pricePerHour: court.pricePerHour.amount,
-                    currency: court.pricePerHour.currency,
+                    currency: COURT_CURRENCY,
                     isActive: !court.isActive,
                 }
             );
@@ -380,44 +391,25 @@ export default function CourtsPage() {
                                     </span>
                                 </label>
 
-                                <div className="grid grid-cols-[2fr_1fr] gap-4">
-                                    <div>
-                                        <label className="mb-2 block text-sm font-semibold text-zinc-700">
-                                            Cena po satu <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            inputMode="numeric"
-                                            pattern="[0-9]*"
-                                            value={form.pricePerHour}
-                                            onChange={(e) => {
-                                                const cleaned = e.target.value.replace(/^0+(?=\d)/, "");
-                                                setForm({
-                                                    ...form,
-                                                    pricePerHour: Number(cleaned) || 0,
-                                                });
-                                            }}
-                                            required
-                                            className="w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="mb-2 block text-sm font-semibold text-zinc-700">
-                                            Valuta
-                                        </label>
-                                        <input
-                                            value={form.currency}
-                                            onChange={(e) =>
-                                                setForm({
-                                                    ...form,
-                                                    currency: e.target.value,
-                                                })
-                                            }
-                                            maxLength={3}
-                                            className="w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
-                                        />
-                                    </div>
+                                <div>
+                                    <label className="mb-2 block text-sm font-semibold text-zinc-700">
+                                        Cena po satu (RSD) <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        value={form.pricePerHour}
+                                        onChange={(e) => {
+                                            const cleaned = e.target.value.replace(/^0+(?=\d)/, "");
+                                            setForm({
+                                                ...form,
+                                                pricePerHour: Number(cleaned) || 0,
+                                            });
+                                        }}
+                                        required
+                                        className="w-full rounded-lg border border-zinc-300 px-4 py-3 outline-none transition focus:border-green-600 focus:ring-2 focus:ring-green-100"
+                                    />
                                 </div>
 
                                 <div className="flex gap-3 pt-2">

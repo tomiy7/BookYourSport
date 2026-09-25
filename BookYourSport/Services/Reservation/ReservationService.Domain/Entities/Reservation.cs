@@ -18,6 +18,8 @@ public class Reservation : AggregateRoot
     public Price Price { get; private set; } = null!;
     public ReservationStatus Status { get; private set; }
     
+    public string? CancellationReason { get; private set; }
+    
     private Reservation() { }
 
     private Reservation(Guid courtId, Guid clubId, Guid userId, DateTime startTime, DateTime endTime, Price price)
@@ -63,8 +65,15 @@ public class Reservation : AggregateRoot
         Status = ReservationStatus.Cancelled;
     }
     
-    // For now only supports the rescheduling with the same duration of the slot
-    // Will be changed once we align on the approach
+    public void CancelByClub(string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new ReservationDomainException("Cancellation reason must be specified.");
+
+        Status = ReservationStatus.Cancelled;
+        CancellationReason ??= reason;
+    }
+    
     public void Reschedule(DateTime newStartTime, DateTime newEndTime, Price newPrice)
     {
         if (Status == ReservationStatus.Cancelled)

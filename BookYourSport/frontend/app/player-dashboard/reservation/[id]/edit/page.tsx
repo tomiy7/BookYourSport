@@ -38,7 +38,7 @@ type User = {
 };
 
 function formatDate(dateString: string) {
-    return new Intl.DateTimeFormat("sr-RS", {
+    return new Intl.DateTimeFormat("sr-Latn-RS", {
         day: "2-digit",
         month: "long",
         year: "numeric",
@@ -46,7 +46,7 @@ function formatDate(dateString: string) {
 }
 
 function formatTime(dateString: string) {
-    return new Intl.DateTimeFormat("sr-RS", {
+    return new Intl.DateTimeFormat("sr-Latn-RS", {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,

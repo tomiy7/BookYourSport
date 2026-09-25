@@ -12,6 +12,8 @@ public class ReservationDto
     public DateTime EndTime { get; set; }
     public PriceDto Price { get; set; } = new();
     public string Status { get; set; } = string.Empty;
+    
+    public string? CancellationReason { get; set; }
 }
 
 public class CreateReservationDto

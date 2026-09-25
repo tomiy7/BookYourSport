@@ -556,6 +556,33 @@ public class AuthController : ControllerBase
     }
 
     // =========================
+    // KONTAKT PODACI KORISNIKA
+    // (za vlasnika kluba - prikaz u detaljima rezervacije)
+    // =========================
+
+    [HttpGet("users/{id:guid}/contact")]
+    [Authorize(Roles = Roles.Club + "," + Roles.Admin)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserContactAsync(Guid id)
+    {
+        var user = await _userRepository.GetUserByIdAsync(id);
+
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new
+        {
+            user.FirstName,
+            user.LastName,
+            user.Email
+        });
+    }
+
+    // =========================
     // PAYMENT / CONTRACT NOTIFICATIONS
     // =========================
     

@@ -32,6 +32,7 @@ type Court = {
     name: string;
     surfaceType?: string | number;
     isIndoor?: boolean;
+    isActive?: boolean;
 };
 
 type AvailableSlot = {
@@ -166,7 +167,7 @@ function formatDate(dateString: string) {
 
 function formatTime(dateTime: string) {
     return new Intl.DateTimeFormat(
-        "sr-RS",
+        "sr-Latn-RS",
         {
             hour: "2-digit",
             minute: "2-digit",
@@ -225,6 +226,9 @@ export default function ClubDetailsPage() {
 
     const [courts, setCourts] =
         useState<Court[]>([]);
+
+    const [courtsLoaded, setCourtsLoaded] =
+        useState(false);
 
     const [
         selectedCourtId,
@@ -300,192 +304,267 @@ export default function ClubDetailsPage() {
                 const response =
                     await fetch(
                         `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${clubId}/courts`
-);
+                    );
 
-if (!response.ok) {
-    throw new Error();
-}
+                if (!response.ok) {
+                    throw new Error();
+                }
 
-const data =
-    await response.json();
+                const allCourts: Court[] =
+                    await response.json();
 
-setCourts(data);
-
-if (data.length > 0) {
-    setSelectedCourtId(
-        data[0].id
-    );
-}
-} catch {
-    setError(
-        "Došlo je do greške prilikom učitavanja terena."
-    );
-}
-}
-
-loadCourts();
-}, [clubId]);
-
-async function loadAvailableSlots() {
-    if (
-        !selectedCourtId ||
-        !selectedDate
-    ) {
-        return;
-    }
-
-    try {
-        setLoadingSlots(true);
-        setError("");
-        setAvailableSlots([]);
-        setSelectedSlots([]);
-
-        const response =
-            await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${clubId}/courts/${selectedCourtId}/availability?date=${selectedDate}`
-            );
-
-        if (!response.ok) {
-            throw new Error();
-        }
-
-        const data =
-            await response.json();
-
-        setAvailableSlots(
-            sortSlots(data)
-        );
-    } catch {
-        setError(
-            "Nije moguće učitati slobodne termine."
-        );
-    } finally {
-        setLoadingSlots(false);
-    }
-}
-
-function toggleSlot(
-    slot: AvailableSlot
-) {
-    setError("");
-
-    const exists =
-        selectedSlots.some(
-            (item) =>
-                item.startTime ===
-                slot.startTime
-        );
-
-    if (exists) {
-        setSelectedSlots(
-            (current) =>
-                current.filter(
-                    (item) =>
-                        item.startTime !==
-                        slot.startTime
-                )
-        );
-
-        return;
-    }
-
-    if (
-        selectedSlots.length >= 4
-    ) {
-        setError(
-            "Jedna rezervacija može trajati najviše 4 sata."
-        );
-
-        return;
-    }
-
-    const newSelection =
-        sortSlots([
-            ...selectedSlots,
-            slot,
-        ]);
-
-    if (
-        !areSlotsConsecutive(
-            newSelection
-        )
-    ) {
-        setError(
-            "Za jedan datum možeš izabrati samo uzastopne termine."
-        );
-
-        return;
-    }
-
-    setSelectedSlots(
-        newSelection
-    );
-}
-
-function addSelectedDay() {
-    if (
-        !selectedDate ||
-        selectedSlots.length === 0
-    ) {
-        return;
-    }
-
-    setSelectedDays(
-        (currentDays) => {
-            const withoutCurrentDate =
-                currentDays.filter(
-                    (day) =>
-                        day.date !==
-                        selectedDate
+// Neaktivni tereni se igračima ne prikazuju.
+                const data = allCourts.filter(
+                    (court) => court.isActive !== false
                 );
 
-            return [
-                ...withoutCurrentDate,
-                {
-                    date:
-                    selectedDate,
+                setCourts(data);
 
-                    slots:
-                        sortSlots(
-                            selectedSlots
-                        ),
-                },
-            ].sort(
-                (a, b) =>
-                    a.date.localeCompare(
-                        b.date
+                if (data.length > 0) {
+                    setSelectedCourtId(
+                        data[0].id
+                    );
+                }
+
+                setCourtsLoaded(true);
+            } catch {
+                setError(
+                    "Došlo je do greške prilikom učitavanja terena."
+                );
+                setCourtsLoaded(true);
+            }
+        }
+
+        loadCourts();
+    }, [clubId]);
+
+    async function loadAvailableSlots() {
+        if (
+            !selectedCourtId ||
+            !selectedDate
+        ) {
+            return;
+        }
+
+        try {
+            setLoadingSlots(true);
+            setError("");
+            setAvailableSlots([]);
+            setSelectedSlots([]);
+
+            const response =
+                await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/reservation/api/clubs/${clubId}/courts/${selectedCourtId}/availability?date=${selectedDate}`
+                );
+
+            if (!response.ok) {
+                throw new Error();
+            }
+
+            const data =
+                await response.json();
+
+            setAvailableSlots(
+                sortSlots(data)
+            );
+        } catch {
+            setError(
+                "Nije moguće učitati slobodne termine."
+            );
+        } finally {
+            setLoadingSlots(false);
+        }
+    }
+
+    function toggleSlot(
+        slot: AvailableSlot
+    ) {
+        setError("");
+
+        const exists =
+            selectedSlots.some(
+                (item) =>
+                    item.startTime ===
+                    slot.startTime
+            );
+
+        if (exists) {
+            setSelectedSlots(
+                (current) =>
+                    current.filter(
+                        (item) =>
+                            item.startTime !==
+                            slot.startTime
                     )
             );
+
+            return;
         }
-    );
 
-    setSelectedSlots([]);
-    setAvailableSlots([]);
-    setSelectedDate("");
-}
+        if (
+            selectedSlots.length >= 4
+        ) {
+            setError(
+                "Jedna rezervacija može trajati najviše 4 sata."
+            );
 
-function removeDay(
-    date: string
-) {
-    setSelectedDays(
-        (current) =>
-            current.filter(
-                (day) =>
-                    day.date !== date
+            return;
+        }
+
+        const newSelection =
+            sortSlots([
+                ...selectedSlots,
+                slot,
+            ]);
+
+        if (
+            !areSlotsConsecutive(
+                newSelection
             )
-    );
-}
+        ) {
+            setError(
+                "Za jedan datum možeš izabrati samo uzastopne termine."
+            );
 
-function continueToPayment() {
-    if (
-        selectedDays.length === 0
-    ) {
-        setError(
-            "Dodaj bar jedan termin za rezervaciju."
+            return;
+        }
+
+        setSelectedSlots(
+            newSelection
+        );
+    }
+
+    function addSelectedDay() {
+        if (
+            !selectedDate ||
+            selectedSlots.length === 0
+        ) {
+            return;
+        }
+
+        setSelectedDays(
+            (currentDays) => {
+                const withoutCurrentDate =
+                    currentDays.filter(
+                        (day) =>
+                            day.date !==
+                            selectedDate
+                    );
+
+                return [
+                    ...withoutCurrentDate,
+                    {
+                        date:
+                        selectedDate,
+
+                        slots:
+                            sortSlots(
+                                selectedSlots
+                            ),
+                    },
+                ].sort(
+                    (a, b) =>
+                        a.date.localeCompare(
+                            b.date
+                        )
+                );
+            }
         );
 
-        return;
+        setSelectedSlots([]);
+        setAvailableSlots([]);
+        setSelectedDate("");
     }
+
+    function removeDay(
+        date: string
+    ) {
+        setSelectedDays(
+            (current) =>
+                current.filter(
+                    (day) =>
+                        day.date !== date
+                )
+        );
+    }
+
+    function continueToPayment() {
+        if (
+            selectedDays.length === 0
+        ) {
+            setError(
+                "Dodaj bar jedan termin za rezervaciju."
+            );
+
+            return;
+        }
+
+        const selectedCourt =
+            courts.find(
+                (court) =>
+                    court.id ===
+                    selectedCourtId
+            );
+
+        const reservations =
+            selectedDays.map(
+                (day) => {
+                    const slots =
+                        sortSlots(
+                            day.slots
+                        );
+
+                    return {
+                        date:
+                        day.date,
+
+                        startTime:
+                        slots[0]
+                            .startTime,
+
+                        endTime:
+                        slots[
+                        slots.length -
+                        1
+                            ].endTime,
+                    };
+                }
+            );
+
+        const queryParams =
+            new URLSearchParams({
+                clubId,
+                clubName:
+                    club?.name || "",
+
+                courtId:
+                selectedCourtId,
+
+                courtName:
+                    formatCourtName(
+                        selectedCourt
+                    ),
+
+                reservations:
+                    JSON.stringify(
+                        reservations
+                    ),
+            });
+
+        if (!isLoggedIn()) {
+            router.push("/login");
+            return;
+        }
+
+        router.push(
+            `/payment?${queryParams.toString()}`
+        );
+    }
+
+    const today =
+        new Date()
+            .toISOString()
+            .split("T")[0];
 
     const selectedCourt =
         courts.find(
@@ -494,458 +573,397 @@ function continueToPayment() {
                 selectedCourtId
         );
 
-    const reservations =
-        selectedDays.map(
-            (day) => {
-                const slots =
-                    sortSlots(
-                        day.slots
-                    );
+    if (loadingClub) {
+        return (
+            <main className="min-h-screen bg-zinc-50">
+                <Header />
 
-                return {
-                    date:
-                    day.date,
+                <div className="py-24 text-center text-zinc-500">
+                    Učitavanje kluba...
+                </div>
 
-                    startTime:
-                    slots[0]
-                        .startTime,
-
-                    endTime:
-                    slots[
-                    slots.length -
-                    1
-                        ].endTime,
-                };
-            }
+                <Footer />
+            </main>
         );
-
-    const queryParams =
-        new URLSearchParams({
-            clubId,
-            clubName:
-                club?.name || "",
-
-            courtId:
-            selectedCourtId,
-
-            courtName:
-                formatCourtName(
-                    selectedCourt
-                ),
-
-            reservations:
-                JSON.stringify(
-                    reservations
-                ),
-        });
-
-    if (!isLoggedIn()) {
-        router.push("/login");
-        return;
     }
 
-    router.push(
-        `/payment?${queryParams.toString()}`
-    );
-}
+    if (!club) {
+        return (
+            <main className="min-h-screen bg-zinc-50">
+                <Header />
 
-const today =
-    new Date()
-        .toISOString()
-        .split("T")[0];
+                <div className="py-24 text-center text-zinc-500">
+                    Klub nije pronađen.
+                </div>
 
-const selectedCourt =
-    courts.find(
-        (court) =>
-            court.id ===
-            selectedCourtId
-    );
+                <Footer />
+            </main>
+        );
+    }
 
-if (loadingClub) {
     return (
         <main className="min-h-screen bg-zinc-50">
             <Header />
 
-            <div className="py-24 text-center text-zinc-500">
-                Učitavanje kluba...
-            </div>
-
-            <Footer />
-        </main>
-    );
-}
-
-if (!club) {
-    return (
-        <main className="min-h-screen bg-zinc-50">
-            <Header />
-
-            <div className="py-24 text-center text-zinc-500">
-                Klub nije pronađen.
-            </div>
-
-            <Footer />
-        </main>
-    );
-}
-
-return (
-    <main className="min-h-screen bg-zinc-50">
-        <Header />
-
-        <div className="mx-auto max-w-6xl px-6 py-12">
-            <section className="rounded-3xl bg-white p-8 shadow-sm">
+            <div className="mx-auto max-w-6xl px-6 py-12">
+                <section className="rounded-3xl bg-white p-8 shadow-sm">
                     <span className="text-sm font-semibold uppercase tracking-wider text-green-700">
                         Teniski klub
                     </span>
 
-                <h1 className="mt-3 text-4xl font-bold text-zinc-900">
-                    {club.name}
-                </h1>
+                    <h1 className="mt-3 text-4xl font-bold text-zinc-900">
+                        {club.name}
+                    </h1>
 
-                {formatClubAddress(
-                    club
-                ) && (
-                    <p className="mt-4 text-zinc-600">
-                        📍{" "}
-                        {formatClubAddress(
-                            club
-                        )}
-                    </p>
-                )}
-
-                {club.description && (
-                    <p className="mt-4 max-w-3xl leading-7 text-zinc-600">
-                        {club.description}
-                    </p>
-                )}
-            </section>
-
-            <section className="mt-10">
-                <h2 className="text-2xl font-bold text-zinc-900">
-                    1. Izaberi teren
-                </h2>
-
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    {courts.map(
-                        (court) => (
-                            <button
-                                key={
-                                    court.id
-                                }
-                                type="button"
-                                onClick={() => {
-                                    setSelectedCourtId(
-                                        court.id
-                                    );
-
-                                    setSelectedDate(
-                                        ""
-                                    );
-
-                                    setAvailableSlots(
-                                        []
-                                    );
-
-                                    setSelectedSlots(
-                                        []
-                                    );
-
-                                    setSelectedDays(
-                                        []
-                                    );
-                                }}
-                                className={
-                                    selectedCourtId ===
-                                    court.id
-                                        ? "rounded-2xl border-2 border-green-600 bg-green-50 p-6 text-left font-semibold text-green-900"
-                                        : "rounded-2xl border border-zinc-200 bg-white p-6 text-left text-zinc-800 transition hover:border-green-300"
-                                }
-                            >
-                                {formatCourtName(
-                                    court
-                                )}
-                            </button>
-                        )
-                    )}
-                </div>
-            </section>
-
-            <section className="mt-10">
-                <h2 className="text-2xl font-bold text-zinc-900">
-                    2. Izaberi datum
-                </h2>
-
-                <div className="mt-5 flex flex-col gap-4 sm:flex-row">
-                    <input
-                        type="date"
-                        min={today}
-                        value={
-                            selectedDate
-                        }
-                        onChange={(e) => {
-                            setSelectedDate(
-                                e.target
-                                    .value
-                            );
-
-                            setAvailableSlots(
-                                []
-                            );
-
-                            setSelectedSlots(
-                                []
-                            );
-                        }}
-                        className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-zinc-900 outline-none focus:border-green-600 focus:ring-4 focus:ring-green-100"
-                    />
-
-                    <button
-                        type="button"
-                        onClick={
-                            loadAvailableSlots
-                        }
-                        disabled={
-                            !selectedCourtId ||
-                            !selectedDate ||
-                            loadingSlots
-                        }
-                        className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {loadingSlots
-                            ? "Učitavanje..."
-                            : "Prikaži slobodne termine"}
-                    </button>
-                </div>
-            </section>
-
-            {selectedDate && (
-                <section className="mt-10">
-                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-                        <div>
-                            <h2 className="text-2xl font-bold text-zinc-900">
-                                3. Slobodni termini
-                            </h2>
-
-                            <p className="mt-2 capitalize text-zinc-600">
-                                {formatDate(
-                                    selectedDate
-                                )}
-                            </p>
-                        </div>
-
-                        <p className="text-sm text-zinc-500">
-                            Maksimalno 4
-                            uzastopna sata
-                            po rezervaciji.
+                    {formatClubAddress(
+                        club
+                    ) && (
+                        <p className="mt-4 text-zinc-600">
+                            📍{" "}
+                            {formatClubAddress(
+                                club
+                            )}
                         </p>
+                    )}
+
+                    {club.description && (
+                        <p className="mt-4 max-w-3xl leading-7 text-zinc-600">
+                            {club.description}
+                        </p>
+                    )}
+                </section>
+
+                <section className="mt-10">
+                    <h2 className="text-2xl font-bold text-zinc-900">
+                        1. Izaberi teren
+                    </h2>
+
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                        {courts.map(
+                            (court) => (
+                                <button
+                                    key={
+                                        court.id
+                                    }
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedCourtId(
+                                            court.id
+                                        );
+
+                                        setSelectedDate(
+                                            ""
+                                        );
+
+                                        setAvailableSlots(
+                                            []
+                                        );
+
+                                        setSelectedSlots(
+                                            []
+                                        );
+
+                                        setSelectedDays(
+                                            []
+                                        );
+                                    }}
+                                    className={
+                                        selectedCourtId ===
+                                        court.id
+                                            ? "rounded-2xl border-2 border-green-600 bg-green-50 p-6 text-left font-semibold text-green-900"
+                                            : "rounded-2xl border border-zinc-200 bg-white p-6 text-left text-zinc-800 transition hover:border-green-300"
+                                    }
+                                >
+                                    {formatCourtName(
+                                        court
+                                    )}
+                                </button>
+                            )
+                        )}
                     </div>
 
-                    {loadingSlots && (
-                        <div className="py-10 text-zinc-500">
-                            Učitavanje termina...
-                        </div>
+                    {courtsLoaded && courts.length === 0 && (
+                        <p className="mt-5 rounded-xl border border-zinc-200 bg-white p-6 text-zinc-500">
+                            Trenutno nema dostupnih terena u ovom klubu.
+                        </p>
                     )}
+                </section>
 
-                    {!loadingSlots &&
-                        availableSlots.length >
-                        0 && (
-                            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                                {availableSlots.map(
-                                    (
-                                        slot
-                                    ) => {
-                                        const selected =
-                                            selectedSlots.some(
-                                                (
-                                                    item
-                                                ) =>
-                                                    item.startTime ===
-                                                    slot.startTime
-                                            );
+                <section className="mt-10">
+                    <h2 className="text-2xl font-bold text-zinc-900">
+                        2. Izaberi datum
+                    </h2>
 
-                                        return (
-                                            <button
-                                                key={
-                                                    slot.startTime
-                                                }
-                                                type="button"
-                                                onClick={() =>
-                                                    toggleSlot(
-                                                        slot
-                                                    )
-                                                }
-                                                className={
-                                                    selected
-                                                        ? "rounded-xl bg-green-700 px-4 py-4 font-bold text-white"
-                                                        : "rounded-xl border border-zinc-200 bg-white px-4 py-4 font-semibold text-zinc-800 transition hover:border-green-400 hover:bg-green-50"
-                                                }
-                                            >
-                                                {formatTime(
-                                                    slot.startTime
-                                                )}{" "}
-                                                –{" "}
-                                                {formatTime(
-                                                    slot.endTime
-                                                )}
-                                            </button>
-                                        );
-                                    }
-                                )}
-                            </div>
-                        )}
+                    <div className="mt-5 flex flex-col gap-4 sm:flex-row">
+                        <input
+                            type="date"
+                            min={today}
+                            value={
+                                selectedDate
+                            }
+                            onChange={(e) => {
+                                setSelectedDate(
+                                    e.target
+                                        .value
+                                );
 
-                    {!loadingSlots &&
-                        selectedDate &&
-                        availableSlots.length ===
-                        0 && (
-                            <p className="mt-6 text-zinc-500">
-                                Za ovaj datum
-                                trenutno nema
-                                slobodnih termina.
-                            </p>
-                        )}
+                                setAvailableSlots(
+                                    []
+                                );
 
-                    {selectedSlots.length >
-                        0 && (
-                            <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6">
-                                <p className="text-sm font-semibold text-green-800">
-                                    Izabrani termin
-                                </p>
+                                setSelectedSlots(
+                                    []
+                                );
+                            }}
+                            className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-zinc-900 outline-none focus:border-green-600 focus:ring-4 focus:ring-green-100"
+                        />
 
-                                <p className="mt-2 text-xl font-bold text-zinc-900">
-                                    {formatTime(
-                                        selectedSlots[0]
-                                            .startTime
-                                    )}{" "}
-                                    –{" "}
-                                    {formatTime(
-                                        selectedSlots[
-                                        selectedSlots.length -
-                                        1
-                                            ].endTime
+                        <button
+                            type="button"
+                            onClick={
+                                loadAvailableSlots
+                            }
+                            disabled={
+                                !selectedCourtId ||
+                                !selectedDate ||
+                                loadingSlots
+                            }
+                            className="rounded-xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            {loadingSlots
+                                ? "Učitavanje..."
+                                : "Prikaži slobodne termine"}
+                        </button>
+                    </div>
+                </section>
+
+                {selectedDate && (
+                    <section className="mt-10">
+                        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                            <div>
+                                <h2 className="text-2xl font-bold text-zinc-900">
+                                    3. Slobodni termini
+                                </h2>
+
+                                <p className="mt-2 capitalize text-zinc-600">
+                                    {formatDate(
+                                        selectedDate
                                     )}
                                 </p>
+                            </div>
 
-                                <p className="mt-2 text-sm text-green-800">
-                                    Trajanje:{" "}
-                                    {
-                                        selectedSlots.length
-                                    }{" "}
-                                    {selectedSlots.length ===
-                                    1
-                                        ? "sat"
-                                        : selectedSlots.length <
-                                        5
-                                            ? "sata"
-                                            : "sati"}
-                                </p>
+                            <p className="text-sm text-zinc-500">
+                                Maksimalno 4
+                                uzastopna sata
+                                po rezervaciji.
+                            </p>
+                        </div>
 
-                                <button
-                                    type="button"
-                                    onClick={
-                                        addSelectedDay
-                                    }
-                                    className="mt-5 rounded-xl bg-green-700 px-5 py-3 font-semibold text-white transition hover:bg-green-800"
-                                >
-                                    Dodaj ovaj datum
-                                </button>
+                        {loadingSlots && (
+                            <div className="py-10 text-zinc-500">
+                                Učitavanje termina...
                             </div>
                         )}
-                </section>
-            )}
 
-            {selectedDays.length >
-                0 && (
-                    <section className="mt-10 rounded-3xl border border-zinc-200 bg-white p-8">
-                        <h2 className="text-2xl font-bold text-zinc-900">
-                            Tvoji izabrani termini
-                        </h2>
+                        {!loadingSlots &&
+                            availableSlots.length >
+                            0 && (
+                                <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                                    {availableSlots.map(
+                                        (
+                                            slot
+                                        ) => {
+                                            const selected =
+                                                selectedSlots.some(
+                                                    (
+                                                        item
+                                                    ) =>
+                                                        item.startTime ===
+                                                        slot.startTime
+                                                );
 
-                        <p className="mt-2 text-zinc-600">
-                            Možeš dodati više
-                            dana. Za svaki datum
-                            backend će dobiti
-                            posebnu rezervaciju.
-                        </p>
-
-                        <div className="mt-6 space-y-3">
-                            {selectedDays.map(
-                                (day) => {
-                                    const slots =
-                                        sortSlots(
-                                            day.slots
-                                        );
-
-                                    return (
-                                        <div
-                                            key={
-                                                day.date
-                                            }
-                                            className="flex flex-col gap-4 rounded-2xl bg-zinc-50 p-5 sm:flex-row sm:items-center sm:justify-between"
-                                        >
-                                            <div>
-                                                <p className="font-bold capitalize text-zinc-900">
-                                                    {formatDate(
-                                                        day.date
-                                                    )}
-                                                </p>
-
-                                                <p className="mt-1 text-zinc-600">
+                                            return (
+                                                <button
+                                                    key={
+                                                        slot.startTime
+                                                    }
+                                                    type="button"
+                                                    onClick={() =>
+                                                        toggleSlot(
+                                                            slot
+                                                        )
+                                                    }
+                                                    className={
+                                                        selected
+                                                            ? "rounded-xl bg-green-700 px-4 py-4 font-bold text-white"
+                                                            : "rounded-xl border border-zinc-200 bg-white px-4 py-4 font-semibold text-zinc-800 transition hover:border-green-400 hover:bg-green-50"
+                                                    }
+                                                >
                                                     {formatTime(
-                                                        slots[0]
-                                                            .startTime
+                                                        slot.startTime
                                                     )}{" "}
                                                     –{" "}
                                                     {formatTime(
-                                                        slots[
-                                                        slots.length -
-                                                        1
-                                                            ]
-                                                            .endTime
+                                                        slot.endTime
                                                     )}
-                                                </p>
-                                            </div>
-
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    removeDay(
-                                                        day.date
-                                                    )
-                                                }
-                                                className="font-semibold text-red-600 transition hover:text-red-800"
-                                            >
-                                                Ukloni
-                                            </button>
-                                        </div>
-                                    );
-                                }
+                                                </button>
+                                            );
+                                        }
+                                    )}
+                                </div>
                             )}
-                        </div>
 
-                        <div className="mt-8">
-                            <button
-                                type="button"
-                                onClick={
-                                    continueToPayment
-                                }
-                                className="rounded-xl bg-green-700 px-7 py-4 font-semibold text-white transition hover:bg-green-800"
-                            >
-                                Nastavi na pregled →
-                            </button>
-                        </div>
+                        {!loadingSlots &&
+                            selectedDate &&
+                            availableSlots.length ===
+                            0 && (
+                                <p className="mt-6 text-zinc-500">
+                                    Za ovaj datum
+                                    trenutno nema
+                                    slobodnih termina.
+                                </p>
+                            )}
+
+                        {selectedSlots.length >
+                            0 && (
+                                <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 p-6">
+                                    <p className="text-sm font-semibold text-green-800">
+                                        Izabrani termin
+                                    </p>
+
+                                    <p className="mt-2 text-xl font-bold text-zinc-900">
+                                        {formatTime(
+                                            selectedSlots[0]
+                                                .startTime
+                                        )}{" "}
+                                        –{" "}
+                                        {formatTime(
+                                            selectedSlots[
+                                            selectedSlots.length -
+                                            1
+                                                ].endTime
+                                        )}
+                                    </p>
+
+                                    <p className="mt-2 text-sm text-green-800">
+                                        Trajanje:{" "}
+                                        {
+                                            selectedSlots.length
+                                        }{" "}
+                                        {selectedSlots.length ===
+                                        1
+                                            ? "sat"
+                                            : selectedSlots.length <
+                                            5
+                                                ? "sata"
+                                                : "sati"}
+                                    </p>
+
+                                    <button
+                                        type="button"
+                                        onClick={
+                                            addSelectedDay
+                                        }
+                                        className="mt-5 rounded-xl bg-green-700 px-5 py-3 font-semibold text-white transition hover:bg-green-800"
+                                    >
+                                        Dodaj ovaj datum
+                                    </button>
+                                </div>
+                            )}
                     </section>
                 )}
 
-            {error && (
-                <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">
-                    {error}
-                </div>
-            )}
-        </div>
+                {selectedDays.length >
+                    0 && (
+                        <section className="mt-10 rounded-3xl border border-zinc-200 bg-white p-8">
+                            <h2 className="text-2xl font-bold text-zinc-900">
+                                Tvoji izabrani termini
+                            </h2>
 
-        <Footer />
-    </main>
-);
+                            <p className="mt-2 text-zinc-600">
+                                Možeš dodati više
+                                dana. Za svaki datum
+                                backend će dobiti
+                                posebnu rezervaciju.
+                            </p>
+
+                            <div className="mt-6 space-y-3">
+                                {selectedDays.map(
+                                    (day) => {
+                                        const slots =
+                                            sortSlots(
+                                                day.slots
+                                            );
+
+                                        return (
+                                            <div
+                                                key={
+                                                    day.date
+                                                }
+                                                className="flex flex-col gap-4 rounded-2xl bg-zinc-50 p-5 sm:flex-row sm:items-center sm:justify-between"
+                                            >
+                                                <div>
+                                                    <p className="font-bold capitalize text-zinc-900">
+                                                        {formatDate(
+                                                            day.date
+                                                        )}
+                                                    </p>
+
+                                                    <p className="mt-1 text-zinc-600">
+                                                        {formatTime(
+                                                            slots[0]
+                                                                .startTime
+                                                        )}{" "}
+                                                        –{" "}
+                                                        {formatTime(
+                                                            slots[
+                                                            slots.length -
+                                                            1
+                                                                ]
+                                                                .endTime
+                                                        )}
+                                                    </p>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeDay(
+                                                            day.date
+                                                        )
+                                                    }
+                                                    className="font-semibold text-red-600 transition hover:text-red-800"
+                                                >
+                                                    Ukloni
+                                                </button>
+                                            </div>
+                                        );
+                                    }
+                                )}
+                            </div>
+
+                            <div className="mt-8">
+                                <button
+                                    type="button"
+                                    onClick={
+                                        continueToPayment
+                                    }
+                                    className="rounded-xl bg-green-700 px-7 py-4 font-semibold text-white transition hover:bg-green-800"
+                                >
+                                    Nastavi na pregled →
+                                </button>
+                            </div>
+                        </section>
+                    )}
+
+                {error && (
+                    <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">
+                        {error}
+                    </div>
+                )}
+            </div>
+
+            <Footer />
+        </main>
+    );
 }

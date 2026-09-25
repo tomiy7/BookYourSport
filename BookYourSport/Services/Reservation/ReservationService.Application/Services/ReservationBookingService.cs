@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using ReservationService.Application.DTOs;
 using ReservationService.Application.Interfaces;
 using ReservationService.Domain.Entities;
+using ReservationService.Domain.Enums;
 using ReservationService.Domain.Exceptions;
 using ReservationService.Domain.Interfaces;
 
@@ -402,6 +403,70 @@ public class ReservationBookingService : IReservationService
             reservation.Id);
 
         return true;
+    }
+
+    public async Task<(int Cancelled, int Failed)> CancelUpcomingReservationsForCourtAsync(
+        Guid clubId,
+        Guid courtId,
+        string reason)
+    {
+        var now = DateTime.UtcNow;
+
+        // Samo buduće, potvrđene (plaćene) rezervacije.
+        // Prošle se ne diraju, a Pending još nije naplaćen pa nema šta da se vraća.
+        var reservations =
+            (await _reservationRepository.GetByClubAsync(clubId))
+            .Where(r =>
+                r.CourtId == courtId &&
+                r.Status == ReservationStatus.Confirmed &&
+                r.StartTime > now)
+            .ToList();
+        
+        var cancelled = 0;
+        var failed = 0;
+
+        foreach (var reservation in reservations)
+        {
+            try
+            {
+                // Otkazivanje je krivica kluba, pa igrač uvek dobija PUN iznos
+                // (RefundPolicy za otkazivanje na strani igrača se ovde ne primenjuje).
+                // Payment Service vraća tačno onaj iznos koji mu pošaljemo
+                // jer klijent ne šalje CancelReservation=true.
+                await _paymentServiceClient.RefundAsync(
+                    reservation.UserId,
+                    reservation.Price.Amount,
+                    reservation.Id,
+                    reservation.StartTime,
+                    now);
+
+                // Tek nakon uspešnog povraćaja rezervacija se otkazuje
+                // i beleži se razlog, da ga igrač vidi u aplikaciji.
+                reservation.CancelByClub(reason);
+
+                await _reservationRepository.SaveChangesAsync();
+
+                cancelled++;
+
+                _logger.LogInformation(
+                    "Reservation {ReservationId} cancelled and fully refunded because of: {Reason}",
+                    reservation.Id,
+                    reason);
+            }
+            catch (Exception ex)
+            {
+                failed++;
+
+                _logger.LogError(
+                    ex,
+                    "Failed to cancel reservation {ReservationId} for court {CourtId} (reason: {Reason})",
+                    reservation.Id,
+                    courtId,
+                    reason);
+            }
+        }
+
+        return (cancelled, failed);
     }
 
 
